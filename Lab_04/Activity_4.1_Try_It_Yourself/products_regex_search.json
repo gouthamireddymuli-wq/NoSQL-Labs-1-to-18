@@ -1,0 +1,178 @@
+{
+  "search_wireless": {
+    "query": {
+      "name": {
+        "$regex": "wireless",
+        "$options": "i"
+      }
+    },
+    "count": 4,
+    "results": [
+      {
+        "sku": "PROD-003",
+        "name": "Noise Cancelling Wireless Headphones",
+        "category": "Audio",
+        "price": 199.99,
+        "stock": 0,
+        "tags": [
+          "electronics",
+          "wireless",
+          "premium"
+        ]
+      },
+      {
+        "sku": "PROD-010",
+        "name": "Portable Bluetooth Wireless Speaker",
+        "category": "Audio",
+        "price": 79.99,
+        "stock": 35,
+        "tags": [
+          "electronics",
+          "wireless",
+          "audio"
+        ]
+      },
+      {
+        "sku": "PROD-001",
+        "name": "Wireless Ergonomic Keyboard",
+        "category": "Peripherals",
+        "price": 49.99,
+        "stock": 25,
+        "tags": [
+          "electronics",
+          "wireless",
+          "ergonomic",
+          "office"
+        ]
+      },
+      {
+        "sku": "PROD-005",
+        "name": "Wireless Optical Mouse",
+        "category": "Peripherals",
+        "price": 29.99,
+        "stock": 60,
+        "tags": [
+          "electronics",
+          "wireless"
+        ]
+      }
+    ]
+  },
+  "search_keyboard": {
+    "query": {
+      "name": {
+        "$regex": "keyboard",
+        "$options": "i"
+      }
+    },
+    "count": 2,
+    "results": [
+      {
+        "sku": "PROD-006",
+        "name": "Mechanical RGB Gaming Keyboard",
+        "category": "Peripherals",
+        "price": 129.99,
+        "stock": 18,
+        "tags": [
+          "electronics",
+          "gaming",
+          "premium"
+        ]
+      },
+      {
+        "sku": "PROD-001",
+        "name": "Wireless Ergonomic Keyboard",
+        "category": "Peripherals",
+        "price": 49.99,
+        "stock": 25,
+        "tags": [
+          "electronics",
+          "wireless",
+          "ergonomic",
+          "office"
+        ]
+      }
+    ]
+  },
+  "prefix_ultra": {
+    "query": {
+      "name": {
+        "$regex": "^Ultra",
+        "$options": "i"
+      }
+    },
+    "count": 1,
+    "results": [
+      {
+        "sku": "PROD-002",
+        "name": "Ultra HD 4K Gaming Monitor",
+        "category": "Displays",
+        "price": 349.99,
+        "stock": 15,
+        "tags": [
+          "electronics",
+          "premium",
+          "gaming"
+        ]
+      }
+    ]
+  },
+  "suffix_stand": {
+    "query": {
+      "name": {
+        "$regex": "Stand$",
+        "$options": "i"
+      }
+    },
+    "count": 1,
+    "results": [
+      {
+        "sku": "PROD-008",
+        "name": "Adjustable Aluminum Laptop Stand",
+        "category": "Accessories",
+        "price": 39.99,
+        "stock": 45,
+        "tags": [
+          "accessories",
+          "ergonomic"
+        ]
+      }
+    ]
+  },
+  "compound_desk_budget": {
+    "query": {
+      "name": {
+        "$regex": "desk",
+        "$options": "i"
+      },
+      "price": {
+        "$lte": 50.0
+      }
+    },
+    "count": 2,
+    "results": [
+      {
+        "sku": "PROD-011",
+        "name": "Premium Full-Grain Leather Desk Mat",
+        "category": "Office",
+        "price": 34.5,
+        "stock": 50,
+        "tags": [
+          "office",
+          "premium"
+        ]
+      },
+      {
+        "sku": "PROD-009",
+        "name": "Smart LED Desk Lamp",
+        "category": "Lighting",
+        "price": 45.0,
+        "stock": 0,
+        "tags": [
+          "lighting",
+          "smart-home"
+        ]
+      }
+    ]
+  }
+}

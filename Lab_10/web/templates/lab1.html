@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Lab 10.1 – Bank Transfer</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+<style>
+  :root{--mg:#00684A;}
+  body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',system-ui,sans-serif;}
+  .navbar{background:#00684A!important;}
+  .card{background:#161b22;border:1px solid #30363d;}
+  .card-header{background:#1f2937;border-bottom:1px solid #30363d;}
+  .table{color:#e6edf3;}
+  .table td,.table th{border-color:#30363d;}
+  .alert-success-dark{background:#0a3a2a;border:1px solid #00684A;color:#00ED64;}
+  .alert-danger-dark{background:#3a0a0a;border:1px solid #da3633;color:#ff7b72;}
+  .log-area{background:#0d1117;border:1px solid #30363d;border-radius:6px;font-family:monospace;font-size:.8rem;max-height:220px;overflow-y:auto;padding:10px;}
+  .spinner-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-dark navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/"><i class="bi bi-arrow-left me-2"></i>NoSQL Lab 10</a>
+    <span class="navbar-text fw-semibold"><i class="bi bi-bank2 me-2"></i>Lab 10.1 – Bank Transfer Transaction</span>
+  </div>
+</nav>
+
+<div class="spinner-overlay" id="spinner"><div class="spinner-border text-success" style="width:3rem;height:3rem;"></div></div>
+
+<div class="container my-4">
+  <div class="row g-4">
+
+    <!-- Accounts panel -->
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><i class="bi bi-people-fill me-2"></i>Account Balances</h6>
+          <button class="btn btn-sm btn-outline-success" onclick="seedAccounts()"><i class="bi bi-arrow-counterclockwise me-1"></i>Re-seed</button>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0" id="accountsTable">
+            <thead><tr><th>Account</th><th>Holder</th><th class="text-end">Balance</th><th class="text-end">Version</th></tr></thead>
+            <tbody id="accountsBody"><tr><td colspan="4" class="text-center text-secondary p-3">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transfer form -->
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header"><h6 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Execute Transfer</h6></div>
+        <div class="card-body">
+          <div id="txnResult" class="mb-3" style="display:none;"></div>
+          <div class="mb-3">
+            <label class="form-label text-secondary small">From Account</label>
+            <select class="form-select bg-dark text-light border-secondary" id="fromId">
+              <option value="ACC-001">ACC-001 – Arjun</option>
+              <option value="ACC-002">ACC-002 – Sneha</option>
+              <option value="ACC-003">ACC-003 – Rahul</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-secondary small">To Account</label>
+            <select class="form-select bg-dark text-light border-secondary" id="toId">
+              <option value="ACC-002">ACC-002 – Sneha</option>
+              <option value="ACC-001">ACC-001 – Arjun</option>
+              <option value="ACC-003">ACC-003 – Rahul</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-secondary small">Amount ($)</label>
+            <input type="number" class="form-control bg-dark text-light border-secondary" id="amount" value="500" min="1" step="0.01"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-secondary small">Description</label>
+            <input type="text" class="form-control bg-dark text-light border-secondary" id="desc" value="Web transfer"/>
+          </div>
+          <div class="d-grid gap-2">
+            <button class="btn btn-success" onclick="doTransfer()"><i class="bi bi-send-fill me-2"></i>Transfer</button>
+            <button class="btn btn-outline-danger btn-sm" onclick="doInsufficientTest()"><i class="bi bi-exclamation-triangle me-2"></i>Test Insufficient Funds (rollback)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transaction log -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><i class="bi bi-journal-text me-2"></i>Transaction Audit Log</h6>
+          <button class="btn btn-sm btn-outline-secondary" onclick="loadTxnLog()"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>From</th><th>To</th><th class="text-end">Amount</th><th>Description</th><th>Timestamp</th></tr></thead>
+            <tbody id="txnBody"><tr><td colspan="5" class="text-center text-secondary p-3">No transactions yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Concept card -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header"><h6 class="mb-0"><i class="bi bi-code-slash me-2"></i>How it works – Lab 10.1</h6></div>
+        <div class="card-body">
+          <div class="log-area">
+# 1. Start a client session
+with client.start_session() as session:
+    with session.start_transaction(
+        read_concern={"level": "snapshot"},
+        write_concern=WriteConcern(w="majority")
+    ):
+        # 2. Debit (filter includes balance check)
+        r = col.update_one(
+            {"account_id": from_id, "balance": {"$gte": amount}},
+            {"$inc": {"balance": -amount}}, session=session
+        )
+        if r.matched_count == 0:
+            raise ValueError("Insufficient funds")  # → rollback
+
+        # 3. Credit
+        col.update_one({"account_id": to_id},
+                       {"$inc": {"balance": amount}}, session=session)
+
+        # 4. Audit record (same atomic transaction)
+        db["transactions"].insert_one({...}, session=session)
+# → auto-commit on clean exit, auto-rollback on exception
+
+# Activity: Retry with exponential back-off
+for attempt in range(MAX_RETRIES):
+    ...
+    except OperationFailure as e:
+        if "TransientTransactionError" in e.error_labels:
+            time.sleep(0.1 * 2**attempt)   # 100ms, 200ms, 400ms…
+            continue
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function show(id,html,cls){
+  const el=document.getElementById(id);
+  el.style.display='';
+  el.className='p-3 rounded mb-3 '+cls;
+  el.innerHTML=html;
+}
+function spin(on){document.getElementById('spinner').style.display=on?'flex':'none';}
+
+function renderAccounts(data){
+  const tb=document.getElementById('accountsBody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="4" class="text-center text-secondary p-3">No accounts found – click Re-seed</td></tr>';return;}
+  tb.innerHTML=data.map(a=>`<tr>
+    <td><span class="badge bg-secondary">${a.account_id}</span></td>
+    <td>${a.holder}</td>
+    <td class="text-end fw-bold text-success">$${Number(a.balance).toLocaleString('en',{minimumFractionDigits:2})}</td>
+    <td class="text-end text-secondary">${a.version??0}</td>
+  </tr>`).join('');
+}
+
+function renderTxnLog(data){
+  const tb=document.getElementById('txnBody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="5" class="text-center text-secondary p-3">No transactions yet</td></tr>';return;}
+  tb.innerHTML=data.map(t=>`<tr>
+    <td><span class="badge bg-secondary">${t.from}</span></td>
+    <td><span class="badge bg-secondary">${t.to}</span></td>
+    <td class="text-end text-success fw-bold">$${Number(t.amount).toFixed(2)}</td>
+    <td class="text-secondary">${t.description}</td>
+    <td class="text-secondary small">${new Date(t.timestamp*1000).toLocaleTimeString()}</td>
+  </tr>`).join('');
+}
+
+async function loadAccounts(){
+  const r=await fetch('/api/accounts');renderAccounts(await r.json());
+}
+async function loadTxnLog(){
+  const r=await fetch('/api/transactions');renderTxnLog(await r.json());
+}
+async function seedAccounts(){
+  spin(true);
+  await fetch('/api/accounts/seed',{method:'POST'});
+  await Promise.all([loadAccounts(),loadTxnLog()]);
+  spin(false);
+  show('txnResult','<i class="bi bi-check-circle me-2"></i>Accounts re-seeded successfully!','alert-success-dark');
+}
+async function doTransfer(){
+  spin(true);
+  const body={from_id:document.getElementById('fromId').value,to_id:document.getElementById('toId').value,amount:document.getElementById('amount').value,description:document.getElementById('desc').value};
+  const r=await fetch('/api/transfer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  renderAccounts(d.accounts||[]);renderTxnLog(d.txn_log||[]);
+  show('txnResult',`<i class="bi bi-${d.ok?'check-circle':'x-circle'} me-2"></i>${d.msg}`,d.ok?'alert-success-dark':'alert-danger-dark');
+  spin(false);
+}
+async function doInsufficientTest(){
+  document.getElementById('fromId').value='ACC-003';
+  document.getElementById('toId').value='ACC-001';
+  document.getElementById('amount').value='99999';
+  document.getElementById('desc').value='Insufficient funds test – should rollback';
+  await doTransfer();
+}
+
+loadAccounts();loadTxnLog();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

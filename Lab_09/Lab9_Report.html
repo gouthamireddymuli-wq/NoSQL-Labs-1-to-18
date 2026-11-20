@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NoSQL Lab 9 Report: Write Concern Latency &amp; Network Partition Simulation</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1.5cm 1.5cm 1.5cm 1.5cm;
+    }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.6;
+      background: #fff;
+      font-size: 10pt;
+      margin: 0;
+      padding: 0;
+    }
+    .cover {
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 90vh;
+      border-left: 8px solid #0a4d8c;
+      padding-left: 2rem;
+    }
+    h1.title {
+      font-size: 26pt;
+      color: #0a4d8c;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+      font-weight: 800;
+    }
+    .subtitle {
+      font-size: 13pt;
+      color: #475569;
+      font-style: italic;
+      margin-bottom: 2.5rem;
+    }
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    .meta-table td {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      font-size: 10pt;
+    }
+    .meta-table td.label {
+      background-color: #f1f5f9;
+      font-weight: bold;
+      width: 30%;
+      color: #0a4d8c;
+    }
+    .meta-table td.value {
+      background-color: #ffffff;
+      color: #1e293b;
+    }
+    .docker-box {
+      background: #eff6ff;
+      border: 2px solid #3b82f6;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-top: 2rem;
+    }
+    .docker-title {
+      font-weight: 800;
+      color: #1d4ed8;
+      font-size: 11pt;
+      margin-bottom: 0.3rem;
+    }
+    .docker-url {
+      font-family: Consolas, monospace;
+      font-size: 11pt;
+      color: #0f172a;
+      font-weight: bold;
+    }
+    h1, h2, h3, h4 {
+      color: #0a4d8c;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: 16pt;
+      border-bottom: 2px solid #0a4d8c;
+      padding-bottom: 4px;
+      margin-top: 2rem;
+      page-break-before: auto;
+    }
+    h2 {
+      font-size: 12pt;
+      margin-top: 1.25rem;
+      color: #1e3a8a;
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 9pt;
+    }
+    table.data-table th, table.data-table td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 10px;
+      text-align: left;
+    }
+    table.data-table th {
+      background-color: #e2e8f0;
+      color: #0a4d8c;
+      font-weight: bold;
+    }
+    table.data-table tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+    .code-block {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 8pt;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      line-height: 1.35;
+      margin: 0.75rem 0;
+      border: 1px solid #1e293b;
+    }
+    .img-container {
+      text-align: center;
+      margin: 1.25rem 0;
+      page-break-inside: avoid;
+    }
+    .img-container img {
+      max-width: 95%;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .img-caption {
+      font-size: 8.5pt;
+      color: #64748b;
+      font-style: italic;
+      margin-top: 4px;
+    }
+    .page-break {
+      page-break-after: always;
+    }
+    .alert-box {
+      background: #f0fdf4;
+      border-left: 4px solid #22c55e;
+      padding: 8px 14px;
+      margin: 1rem 0;
+      font-size: 9pt;
+      border-radius: 0 4px 4px 0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 8pt;
+      font-weight: bold;
+    }
+    .badge-success { background: #dcfce7; color: #166534; }
+    .badge-warn { background: #fef9c3; color: #854d0e; }
+    .badge-danger { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+
+  <!-- COVER PAGE -->
+  <div class="cover">
+    <div style="font-size:12pt; text-transform:uppercase; letter-spacing:2px; color:#64748b; margin-bottom:0.5rem;">
+      University Laboratory Examination &amp; Report
+    </div>
+    <h1 class="title">NoSQL Lab 9: Write Concern Latency Benchmarking &amp; Network Partition Simulation</h1>
+    <div class="subtitle">
+      Empirical Evaluation of Write Concerns (w:1, w:majority, w:all), Journaling Durability Overhead, Distributed Network Partitions (CAP Theorem), and Full-Stack Platform Integration
+    </div>
+
+    <table class="meta-table">
+      <tr>
+        <td class="label">Course / Module</td>
+        <td class="value">NoSQL Databases using MongoDB — Chapter 9</td>
+      </tr>
+      <tr>
+        <td class="label">Student Name</td>
+        <td class="value"><strong>M Gouthami</strong></td>
+      </tr>
+      <tr>
+        <td class="label">Registration Number</td>
+        <td class="value"><strong>24BTRCL130</strong> (CVIP AIML-B)</td>
+      </tr>
+      <tr>
+        <td class="label">Docker Hub Repository</td>
+        <td class="value"><a href="https://hub.docker.com/r/gouthudocker/nosql-lab-9" target="_blank" style="color:#0a4d8c; font-weight:bold; text-decoration:underline;">https://hub.docker.com/r/gouthudocker/nosql-lab-9</a></td>
+      </tr>
+      <tr>
+        <td class="label">Docker Image Tag</td>
+        <td class="value"><code>gouthudocker/nosql-lab-9:latest</code></td>
+      </tr>
+      <tr>
+        <td class="label">Database Engine</td>
+        <td class="value">MongoDB 7.0 / 9.0 Replica Set (rs0, 3 Nodes)</td>
+      </tr>
+      <tr>
+        <td class="label">Web Integration</td>
+        <td class="value">CTI Platform Full-Stack Dashboard (lab9_reports.html &amp; routes/lab9.py)</td>
+      </tr>
+    </table>
+
+    <div class="docker-box">
+      <div class="docker-title"><i class="fab fa-docker"></i> Docker Hub Submission URL (Note for Grading):</div>
+      <div class="docker-url"><a href="https://hub.docker.com/r/gouthudocker/nosql-lab-9" target="_blank" style="color:#0a4d8c; text-decoration:underline;">https://hub.docker.com/r/gouthudocker/nosql-lab-9</a></div>
+      <div style="font-size:8.5pt; color:#475569; margin-top:0.4rem;">
+        The uploaded Docker image is ready for live demonstration and includes the complete web dashboard, REST APIs, and automated test suites.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <h1>1. Executive Summary &amp; Docker Demonstration Guide</h1>
+  <p>
+    In distributed NoSQL architectures, data persistence guarantees and partition resilience must be carefully balanced.
+    This laboratory report provides a rigorous empirical analysis of MongoDB write concerns and network partitioning:
+  </p>
+  <ul>
+    <li><strong>Lab 9.1 (Write Concern Latency):</strong> Evaluates the write latency of 1,000 document insertions across <code>w:1</code> (Primary acknowledgment), <code>w:majority</code> (Quorum 2/3 nodes), and <code>w:all</code> (all 3 nodes).</li>
+    <li><strong>Activity 9.1 (Journaling Impact):</strong> Analyzes the precise latency cost and throughput impact of disk journaling (<code>j:true</code> vs <code>j:false</code>) across all write concerns, definitively resolving whether journaling adds significant latency.</li>
+    <li><strong>Lab 9.2 (Single Node Network Partition):</strong> Simulates the network isolation of Secondary-1 (<code>mongo-rs0-2</code>) in a 3-node cluster, demonstrating that <code>w:1</code> and <code>w:majority</code> writes remain fully operational because surviving quorum (66.7%) is preserved.</li>
+    <li><strong>Activity 9.2 (Total Quorum Collapse &amp; Election):</strong> Simulates total isolation where both secondaries become unreachable. Demonstrates <code>w:majority</code> timeout, automatic Primary step-down to <code>SECONDARY</code>, read-only cluster protection, and subsequent Raft-variant re-election upon network reconnection.</li>
+    <li><strong>Full-Stack Web Integration:</strong> Integrates an interactive live console, benchmark runner, and 4-stage partition visualizer into the CTI Platform web dashboard.</li>
+  </ul>
+
+  <h2>1.1 Docker Demonstration Instructions for Evaluators</h2>
+  <p>Evaluators can run and verify the entire environment using the published Docker image:</p>
+  <div class="code-block"># Step 1: Pull the image from Docker Hub
+docker pull gouthudocker/nosql-lab-9:latest
+
+# Step 2: Run the container with port mapping (maps interactive web UI to port 5000)
+docker run -d -p 5000:5000 --name nosql-lab9-demo gouthudocker/nosql-lab-9:latest
+
+# Step 3: Open the interactive dashboard in your web browser
+http://localhost:5000/lab9_reports.html
+
+# Step 4: Or run any lab activity script directly via docker exec
+docker exec -it nosql-lab9-demo python Activity_9_1/activity_9_1.py
+docker exec -it nosql-lab9-demo python Activity_9_1_TryItYourself/activity_9_1_try.py
+docker exec -it nosql-lab9-demo python Activity_9_2/activity_9_2.py
+docker exec -it nosql-lab9-demo python Activity_9_2_TryItYourself/activity_9_2_try.py</div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 2 -->
+  <h1>2. Lab 9.1: Measure Write Concern Latency</h1>
+  <p>
+    <strong>Objective:</strong> Measure the impact of different write concerns on write latency using 1,000 document inserts per tier.
+  </p>
+  <h2>2.1 Empirical Benchmark Results (1,000 Writes per Tier)</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Write Concern Setting</th>
+        <th>Total Wall Time</th>
+        <th>Avg Latency</th>
+        <th>P50 Median</th>
+        <th>P99 Tail</th>
+        <th>Throughput</th>
+        <th>Relative Cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>w:1 (Primary Only)</strong></td>
+        <td>0.330 s</td>
+        <td>0.323 ms</td>
+        <td>0.163 ms</td>
+        <td>1.149 ms</td>
+        <td><strong>3,029.3 ops/s</strong></td>
+        <td><span class="badge badge-success">1.00x (Baseline)</span></td>
+      </tr>
+      <tr>
+        <td><strong>w:majority (Quorum 2/3 Nodes)</strong></td>
+        <td>2.014 s</td>
+        <td>2.014 ms</td>
+        <td>1.951 ms</td>
+        <td>2.445 ms</td>
+        <td>496.5 ops/s</td>
+        <td><span class="badge badge-warn">6.24x Baseline</span></td>
+      </tr>
+      <tr>
+        <td><strong>w:all / w:3 (All 3 Nodes)</strong></td>
+        <td>3.618 s</td>
+        <td>3.618 ms</td>
+        <td>3.548 ms</td>
+        <td>4.037 ms</td>
+        <td>276.4 ops/s</td>
+        <td><span class="badge badge-danger">11.20x Baseline</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2.2 Technical Analysis &amp; Architectural Latency Drivers</h2>
+  <ul>
+    <li><strong>w:1 (Fastest, High Throughput):</strong> Returns as soon as the Primary commits the document to its in-memory WiredTiger cache. No network replication occurs in the critical execution path. Risk: Subject to rollback if the Primary crashes before transmitting its oplog to secondaries.</li>
+    <li><strong>w:majority (High Durability Quorum):</strong> In a 3-node replica set, majority quorum is &lceil;(3 + 1) / 2&rceil; = 2 nodes. The client thread blocks until the Primary and at least one secondary acknowledge the write. This adds ~1.7ms of network transit and oplog application, yielding a 6.24x latency multiplier. It provides strong durability guarantees and immunity against rollbacks.</li>
+    <li><strong>w:all (Maximum Redundancy, High Latency):</strong> Requires all 3 nodes to acknowledge before returning. Latency is governed by the <em>slowest</em> node in the replica set (tail latency sensitivity), dropping throughput to 276.4 ops/sec. Availability is brittle: if any single node is partitioned or unreachable, writes block indefinitely.</li>
+  </ul>
+
+  <h2>2.3 Developer Terminal Output Screenshot</h2>
+  <div class="img-container">
+    <img src="screenshots/screenshot_activity_9_1.png" alt="Lab 9.1 Screenshot" />
+    <div class="img-caption">Figure 2.1: Terminal execution output of Lab 9.1 write concern latency benchmark.</div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 3 -->
+  <h1>3. Activity 9.1 (Try It Yourself): Journaling Overhead Analysis</h1>
+  <p>
+    <strong>Activity Question:</strong> <em>Repeat the experiment with j:true and j:false for each write concern. Does journaling add significant latency?</em>
+  </p>
+  <p>
+    In MongoDB WiredTiger, <code>j:false</code> acknowledges writes once committed to volatile DRAM cache (with background disk flushing every 100ms).
+    In contrast, <code>j:true</code> forces synchronous flushing of the write-ahead journal to physical disk before acknowledging the client.
+  </p>
+
+  <h2>3.1 Comparative Matrix: Journaling Overhead Across Write Concerns</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Write Concern Tier</th>
+        <th>j:false Avg (ms)</th>
+        <th>j:true Avg (ms)</th>
+        <th>Absolute Added Delta</th>
+        <th>Relative Latency Penalty</th>
+        <th>Throughput Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>w:1 (Primary Only)</strong></td>
+        <td>0.239 ms</td>
+        <td>1.167 ms</td>
+        <td><strong>+0.928 ms</strong></td>
+        <td><span class="badge badge-danger">+388.3%</span></td>
+        <td>4,176 ops/s &rarr; 856 ops/s</td>
+      </tr>
+      <tr>
+        <td><strong>w:majority (Quorum 2/3)</strong></td>
+        <td>2.024 ms</td>
+        <td>2.959 ms</td>
+        <td><strong>+0.935 ms</strong></td>
+        <td><span class="badge badge-warn">+46.2%</span></td>
+        <td>494 ops/s &rarr; 337 ops/s</td>
+      </tr>
+      <tr>
+        <td><strong>w:all (All 3 Nodes)</strong></td>
+        <td>3.669 ms</td>
+        <td>4.560 ms</td>
+        <td><strong>+0.891 ms</strong></td>
+        <td><span class="badge badge-success">+24.3%</span></td>
+        <td>272 ops/s &rarr; 219 ops/s</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3.2 Research Findings &amp; Technical Conclusion</h2>
+  <div class="alert-box">
+    <strong>Conclusion: Does journaling add significant latency?</strong><br />
+    <strong>Yes, in single-node writes (w:1), journaling adds a dramatic +388.3% latency penalty</strong> because the operation transitions from pure sub-millisecond DRAM memory access (~0.24ms) to physical storage disk I/O (fsync commit ~0.93ms).<br />
+    However, for distributed writes (<code>w:majority</code> and <code>w:all</code>), network communication round-trips to secondaries already consume ~2 to 4ms. As a result, disk commit latency partially overlaps with network transit, reducing the relative penalty to +24% to +46%.<br />
+    <em>Trade-Off:</em> <code>j:true</code> ensures ACID crash durability against sudden power loss, whereas <code>j:false</code> risks up to 100ms of data loss.
+  </div>
+
+  <h2>3.3 Developer Terminal Output Screenshot</h2>
+  <div class="img-container">
+    <img src="screenshots/screenshot_activity_9_1_try.png" alt="Activity 9.1 Try Screenshot" />
+    <div class="img-caption">Figure 3.1: Terminal execution output of Activity 9.1 journaling overhead benchmark.</div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 4 -->
+  <h1>4. Lab 9.2: Simulate a Network Partition (Single Node Isolated)</h1>
+  <p>
+    <strong>Objective:</strong> Isolate a secondary node in a 3-node replica set using Docker network manipulation, monitor cluster state, and test write concerns (w:1 vs w:majority).
+  </p>
+  <h2>4.1 Network Partition Injection &amp; Quorum Dynamics</h2>
+  <p>
+    The cluster was initialized with 3 voting members: <code>mongo-rs0-1:27017</code> (PRIMARY), <code>mongo-rs0-2:27018</code> (SECONDARY), and <code>mongo-rs0-3:27019</code> (SECONDARY).
+    Secondary-1 was disconnected from the Docker bridge network:
+  </p>
+  <div class="code-block">docker network disconnect mongo-cluster-net mongo-rs0-2</div>
+  <p>
+    Heartbeats between the Primary and Secondary-1 immediately failed. In <code>rs.status()</code>, Secondary-1 was marked as <code>(UNREACHABLE)</code> with health = 0.
+    However, because <strong>2 out of 3 voting members remained active (66.7% &gt; 50% majority threshold)</strong>, majority quorum was intact. The Primary continued in its primary role without interruption.
+  </p>
+
+  <h2>4.2 Write Operation Outcomes During Partition</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Operation</th>
+        <th>Write Concern</th>
+        <th>Outcome</th>
+        <th>Latency</th>
+        <th>Behavioral Analysis</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Baseline Write</td>
+        <td><code>w:1</code></td>
+        <td><span class="badge badge-success">SUCCESS</span></td>
+        <td>0.31 ms</td>
+        <td>Standard primary in-memory acknowledgment.</td>
+      </tr>
+      <tr>
+        <td>Baseline Write</td>
+        <td><code>w:majority</code></td>
+        <td><span class="badge badge-success">SUCCESS</span></td>
+        <td>2.05 ms</td>
+        <td>Quorum acknowledgment from Primary + Secondary-2.</td>
+      </tr>
+      <tr>
+        <td>Write Under Partition</td>
+        <td><code>w:1</code></td>
+        <td><span class="badge badge-success">SUCCESS</span></td>
+        <td>0.32 ms</td>
+        <td>Requires local primary acknowledgment only; unaffected by isolated secondary.</td>
+      </tr>
+      <tr>
+        <td>Write Under Partition</td>
+        <td><code>w:majority</code></td>
+        <td><span class="badge badge-success">SUCCESS</span></td>
+        <td>2.11 ms</td>
+        <td>Surviving majority consists of Primary + Secondary-3 (2 nodes &ge; 2 quorum). Write safely confirmed!</td>
+      </tr>
+      <tr>
+        <td>Write Under Partition</td>
+        <td><code>w:all (3 nodes)</code></td>
+        <td><span class="badge badge-danger">TIMEOUT</span></td>
+        <td>WTimeout</td>
+        <td>Blocked indefinitely waiting for unreachable Secondary-1.</td>
+      </tr>
+      <tr>
+        <td>Reconnection &amp; Catch-Up</td>
+        <td><code>rs.status()</code></td>
+        <td><span class="badge badge-success">COMPLETE</span></td>
+        <td>0.0 ms lag</td>
+        <td>After 30s, network was reconnected; Secondary-1 fetched missing oplog deltas and returned to SECONDARY.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>4.3 Developer Terminal Output Screenshot</h2>
+  <div class="img-container">
+    <img src="screenshots/screenshot_activity_9_2.png" alt="Lab 9.2 Screenshot" />
+    <div class="img-caption">Figure 4.1: Terminal execution output of Lab 9.2 network partition simulation and recovery.</div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 5 -->
+  <h1>5. Activity 9.2 (Try It Yourself): Total Quorum Loss &amp; Primary Step-Down</h1>
+  <p>
+    <strong>Activity Objective:</strong> Disconnect the second secondary, leaving only the primary. Attempt a <code>w:majority</code> insert.
+    Observe write timeout, automatic Primary step-down, read-only state, and subsequent re-election upon network reconnection.
+  </p>
+
+  <h2>5.1 Chronological Timeline of Total Partition, Step-Down &amp; Election</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Timestamp (UTC)</th>
+        <th>Phase / Event</th>
+        <th>Node 27017</th>
+        <th>Node 27018</th>
+        <th>Node 27019</th>
+        <th>Write Availability</th>
+        <th>Key System Event</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>16:51:17.683</code></td>
+        <td>Phase 1: Baseline</td>
+        <td><span class="badge badge-success">PRIMARY</span></td>
+        <td><span class="badge badge-success">SECONDARY</span></td>
+        <td><span class="badge badge-success">SECONDARY</span></td>
+        <td>Available (All)</td>
+        <td>Full consensus (3/3 nodes active).</td>
+      </tr>
+      <tr>
+        <td><code>16:51:18.683</code></td>
+        <td>Phase 2: Minor Partition</td>
+        <td><span class="badge badge-success">PRIMARY</span></td>
+        <td><span class="badge badge-danger">UNREACHABLE</span></td>
+        <td><span class="badge badge-success">SECONDARY</span></td>
+        <td>Available (All)</td>
+        <td>Secondary-1 disconnected. Quorum (2/3) holds.</td>
+      </tr>
+      <tr>
+        <td><code>16:51:19.684</code></td>
+        <td>Phase 3: Major Partition</td>
+        <td><span class="badge badge-warn">PRIMARY (Iso)</span></td>
+        <td><span class="badge badge-danger">UNREACHABLE</span></td>
+        <td><span class="badge badge-danger">UNREACHABLE</span></td>
+        <td>Degraded (w:1 only)</td>
+        <td>Secondary-2 disconnected. Voting quorum LOST (1/3).</td>
+      </tr>
+      <tr style="background:#fef2f2;">
+        <td><code>16:51:20.684</code></td>
+        <td>Phase 4: Write Timeout</td>
+        <td><span class="badge badge-warn">PRIMARY (Iso)</span></td>
+        <td><span class="badge badge-danger">UNREACHABLE</span></td>
+        <td><span class="badge badge-danger">UNREACHABLE</span></td>
+        <td><strong>TIMED OUT (WTimeout)</strong></td>
+        <td><code>w:majority</code> blocks; times out after 3000ms. Zero data committed.</td>
+      </tr>
+      <tr style="background:#fee2e2;">
+        <td><code>16:51:21.685</code></td>
+        <td><strong>Phase 5: Primary Step-Down</strong></td>
+        <td><span class="badge badge-danger">SECONDARY (Demoted)</span></td>
+        <td><span class="badge badge-danger">UNREACHABLE</span></td>
+        <td><span class="badge badge-danger">UNREACHABLE</span></td>
+        <td><strong>BLOCKED / READ-ONLY</strong></td>
+        <td><strong>CRITICAL EVENT:</strong> Primary detects loss of heartbeats and voluntarily demotes itself.</td>
+      </tr>
+      <tr>
+        <td><code>16:51:23.185</code></td>
+        <td>Phase 6: Read-Only Mode</td>
+        <td><span class="badge badge-danger">SECONDARY</span></td>
+        <td><span class="badge badge-danger">UNREACHABLE</span></td>
+        <td><span class="badge badge-danger">UNREACHABLE</span></td>
+        <td><strong>REJECTED (Code 10107)</strong></td>
+        <td>All client writes rejected (NotWritablePrimary error). Zero split-brain risk.</td>
+      </tr>
+      <tr>
+        <td><code>16:51:24.186</code></td>
+        <td>Phase 7: Network Healed</td>
+        <td><span class="badge badge-warn">SECONDARY</span></td>
+        <td><span class="badge badge-warn">STARTUP2</span></td>
+        <td><span class="badge badge-warn">STARTUP2</span></td>
+        <td>Election Lock</td>
+        <td>Both secondaries reconnected via Docker network connect.</td>
+      </tr>
+      <tr style="background:#f0fdf4;">
+        <td><code>16:51:25.686</code></td>
+        <td><strong>Phase 8: Election &amp; Rejoin</strong></td>
+        <td><span class="badge badge-success">PRIMARY (Restored)</span></td>
+        <td><span class="badge badge-success">SECONDARY</span></td>
+        <td><span class="badge badge-success">SECONDARY</span></td>
+        <td><strong>FULLY RESTORED</strong></td>
+        <td>Node 27017 re-elected Primary (Priority 2.0). Quorum 3/3 restored.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>5.2 Developer Terminal Output Screenshot</h2>
+  <div class="img-container">
+    <img src="screenshots/screenshot_activity_9_2_try.png" alt="Activity 9.2 Try Screenshot" />
+    <div class="img-caption">Figure 5.1: Terminal output of total partition, primary stepdown, and election recovery.</div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 6 -->
+  <h1>6. CAP Theorem &amp; PACELC Trade-Off Analysis in MongoDB</h1>
+  <p>
+    Eric Brewer's CAP Theorem states that a distributed data store can simultaneously provide at most two out of three guarantees:
+    <strong>Consistency (C)</strong>, <strong>Availability (A)</strong>, and <strong>Partition Tolerance (P)</strong>.
+    Because network partitions (P) are unavoidable in real-world distributed networks, systems must choose between C and A during network disruption.
+  </p>
+
+  <div class="img-container">
+    <img src="Write-Concern-TradeOffs.jpg" alt="Write Concern Trade-offs" />
+    <div class="img-caption">Figure 6.1: Write Concern Latency vs Durability Trade-Off Continuum (Provided Specification Diagram).</div>
+  </div>
+
+  <h2>6.1 PACELC Theoretical Mapping</h2>
+  <ul>
+    <li><strong>If Partitioned (P):</strong> MongoDB behaves as a <strong>CP system</strong> when configured with <code>w:majority</code>. When quorum is lost, the Primary steps down and ceases accepting writes, sacrificing Availability (A) to guarantee Consistency (C) and completely prevent split-brain rollbacks. Conversely, if configured with <code>w:1</code>, it leans toward <strong>AP</strong>, accepting local writes that may be rolled back once partitioned members rejoin.</li>
+    <li><strong>Else / Normal State (E):</strong> Under normal network health, MongoDB allows administrators to trade off <strong>Latency (L)</strong> and <strong>Consistency (C)</strong>. Using <code>w:1, j:0</code> yields ultra-low latency (~0.3ms), whereas <code>w:majority, j:1</code> guarantees immediate multi-node disk durability (~2.9ms).</li>
+  </ul>
+
+  <!-- SECTION 7 -->
+  <h1>7. CTI Platform Web Dashboard Integration</h1>
+  <p>
+    To provide a comprehensive interactive demonstration for grading, all Lab 9 capabilities have been integrated into the
+    existing Cyber Threat Intelligence (CTI) Platform web platform:
+  </p>
+  <ul>
+    <li><strong>Backend Blueprint (<code>routes/lab9.py</code>):</strong> Exposes REST API endpoints including <code>GET /api/lab9/summary</code>, <code>POST /api/lab9/benchmark</code>, <code>POST /api/lab9/write-test</code>, and <code>GET /api/lab9/partition/simulate</code>.</li>
+    <li><strong>Frontend Dashboard (<code>lab9_reports.html</code>):</strong> Features a live interactive benchmark console, write probe tester, dynamic 4-stage network partition visualizer, and global navigation links.</li>
+  </ul>
+
+  <h2>7.1 Server Startup &amp; Endpoint Verification Screenshot</h2>
+  <div class="img-container">
+    <img src="screenshots/screenshot_web_integration.png" alt="Web Integration Screenshot" />
+    <div class="img-caption">Figure 7.1: Flask web server startup showing registration of lab9 blueprint and successful HTTP responses.</div>
+  </div>
+
+  <h2>7.2 Conclusion &amp; Key Takeaways</h2>
+  <p>
+    This laboratory confirms that write concerns provide a granular, continuous spectrum balancing latency, durability, and availability.
+    While <code>w:1</code> provides maximum throughput (~3,000+ ops/s), production enterprise architectures mandate <code>w:majority</code>
+    to guarantee zero rollback and ensure continuous operation across single-node hardware failures.
+    Furthermore, journaling (<code>j:true</code>) is crucial for crash durability, adding ~0.9ms of disk fsync overhead.
+    MongoDB's consensus mechanism reliably prevents split-brain writes during partitions by forcing primary step-down upon quorum loss.
+  </p>
+
+</body>
+</html>

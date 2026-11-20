@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNIVERSITY LABORATORY EXAMINATION & TECHNICAL REPORT — NoSQL Lab 10</title>
+<style>
+  @page { margin: 18mm 15mm; size: A4; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1f2328;
+    background: #fff;
+    line-height: 1.55;
+    margin: 30px auto;
+    max-width: 900px;
+    padding: 0 20px;
+  }
+  .banner-top {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #57606a;
+    text-transform: uppercase;
+    border-bottom: 2px solid #d0d7de;
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  h1 { font-size: 24px; color: #00684A; margin: 4px 0 6px 0; font-weight: 800; line-height: 1.25; }
+  .subtitle { font-size: 13.5px; color: #57606a; margin-top: 0; margin-bottom: 20px; line-height: 1.4; }
+  h2 { font-size: 18px; border-bottom: 1px solid #d0d7de; padding-bottom: 5px; color: #0969da; margin-top: 26px; }
+  h3 { font-size: 15px; color: #24292f; margin-top: 18px; }
+  
+  /* Metadata Grid */
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 18px;
+  }
+  .meta-item {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .meta-label {
+    font-weight: 700;
+    color: #57606a;
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .meta-val {
+    color: #1f2328;
+    font-weight: 600;
+  }
+  .meta-val a {
+    color: #0969da;
+    text-decoration: none;
+    word-break: break-all;
+  }
+
+  .grading-box {
+    background: #f0fdf4;
+    border: 1.5px solid #00684A;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 18px 0;
+  }
+  .grading-box h4 {
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    color: #00684A;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .grading-box p {
+    margin: 3px 0;
+    font-size: 13px;
+  }
+  .grading-box .url {
+    font-family: Consolas, monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0969da;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 13px;
+  }
+  th, td {
+    border: 1px solid #d0d7de;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  th { background-color: #f6f8fa; font-weight: 600; }
+  tr:nth-child(even) { background-color: #fafbfc; }
+  pre {
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 12px;
+    overflow-x: auto;
+    font-family: Consolas, Monaco, "Courier New", monospace;
+    line-height: 1.42;
+  }
+  code {
+    font-family: Consolas, Monaco, "Courier New", monospace;
+    background: rgba(175, 184, 193, 0.2);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 12.5px;
+  }
+  pre code { background: none; padding: 0; }
+  .print-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 10px 18px;
+    background: #00684A;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .print-btn:hover { background: #004d36; }
+  @media print {
+    .print-btn { display: none; }
+    body { margin: 0; padding: 0; max-width: 100%; font-size: 11pt; }
+    pre { font-size: 9pt; }
+  }
+</style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">🖨️ Print to PDF</button>
+
+<div class="banner-top">UNIVERSITY LABORATORY EXAMINATION & TECHNICAL REPORT</div>
+
+<h1>NoSQL Lab 10: Multi-Document Transactions & Concurrency Handling</h1>
+<p class="subtitle">Empirical Implementation of ACID Transactions, Rollback Mechanics, Optimistic Concurrency Control (OCC), Write-Conflict Deadlock Handling, and Full-Stack Platform Integration</p>
+
+<div class="meta-grid">
+  <div class="meta-item">
+    <span class="meta-label">Course / Module</span>
+    <span class="meta-val">NoSQL Databases using MongoDB — Chapter 10</span>
+  </div>
+  <div class="meta-item">
+    <span class="meta-label">Student Name</span>
+    <span class="meta-val">M Gouthami</span>
+  </div>
+  <div class="meta-item">
+    <span class="meta-label">Registration Number</span>
+    <span class="meta-val">24BTRCL130 (CVIP AIML-B)</span>
+  </div>
+  <div class="meta-item">
+    <span class="meta-label">Lab Topics</span>
+    <span class="meta-val">Lab 10.1 (Bank Transfer) & Lab 10.2 (Inventory Reservation)</span>
+  </div>
+  <div class="meta-item">
+    <span class="meta-label">Docker Hub Repository</span>
+    <span class="meta-val"><a href="https://hub.docker.com/r/gouthudocker/nosql-lab10" target="_blank">https://hub.docker.com/r/gouthudocker/nosql-lab10</a></span>
+  </div>
+  <div class="meta-item">
+    <span class="meta-label">Docker Image Tag</span>
+    <span class="meta-val">gouthudocker/nosql-lab10:latest</span>
+  </div>
+  <div class="meta-item">
+    <span class="meta-label">Database Engine</span>
+    <span class="meta-val">MongoDB 7.0 Replica Set (rs0, WiredTiger)</span>
+  </div>
+  <div class="meta-item">
+    <span class="meta-label">Web Platform Integration</span>
+    <span class="meta-val">Interactive Flask Dashboard (Port 5000)</span>
+  </div>
+</div>
+
+<div class="grading-box">
+  <h4>Docker Hub Submission URL (Note for Grading):</h4>
+  <p class="url"><a href="https://hub.docker.com/r/gouthudocker/nosql-lab10" target="_blank">https://hub.docker.com/r/gouthudocker/nosql-lab10</a></p>
+  <p>The uploaded Docker container encapsulates the full running platform, interactive web dashboard, and test runners for grading demonstration.</p>
+</div>
+
+<h2>1. Executive Summary & Objectives</h2>
+<p>This laboratory investigates multi-document ACID transaction guarantees in MongoDB using PyMongo on a WiredTiger storage engine configured with a replica set (<code>rs0</code>). The core deliverables include:</p>
+<ul>
+  <li><strong>Lab 10.1 (Bank Transfer System):</strong> Executing atomic transfers between multiple accounts, enforcing strict rollback on insufficient funds, and implementing exponential backoff retry for transient write conflicts.</li>
+  <li><strong>Lab 10.2 (Inventory Reservation System):</strong> E-commerce stock reservation across <code>inventory</code> and <code>orders</code> collections with optimistic concurrency control (OCC), write-conflict detection, multi-threaded stress testing, and throughput (TPS) measurement.</li>
+  <li><strong>Interactive Web Dashboard:</strong> A full-stack Flask web application deployed in Docker to demonstrate both transaction workflows in real time.</li>
+</ul>
+
+<h2>2. Environment & Container Architecture</h2>
+<p>MongoDB multi-document transactions require a running replica set. The environment is containerized via Docker Compose:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Service</th>
+      <th>Image</th>
+      <th>Role</th>
+      <th>Network / Ports</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>mongo_rs0</code></td>
+      <td><code>mongo:7.0</code></td>
+      <td>MongoDB Primary instance with replica set <code>rs0</code> and WiredTiger engine</td>
+      <td>Port 27017</td>
+    </tr>
+    <tr>
+      <td><code>rs_init</code></td>
+      <td><code>mongo:7.0</code></td>
+      <td>Initialization container that initiates <code>rs0</code> and awaits primary readiness</td>
+      <td>Internal</td>
+    </tr>
+    <tr>
+      <td><code>nosql_lab10_web</code></td>
+      <td><code>nosql-lab10:latest</code></td>
+      <td>Python 3.11 container running Flask REST API & Web Dashboard</td>
+      <td>Port 5000</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. Lab 10.1: Bank Transfer Transaction</h2>
+<h3>3.1 Transaction Workflow</h3>
+<p>The fund transfer executes within a <code>ClientSession</code> with snapshot read concern and majority write concern:</p>
+<pre><code>with session.start_transaction(
+    read_concern=ReadConcern("snapshot"),
+    write_concern=WriteConcern(w="majority")
+):
+    # 1. Atomic debit with conditional balance filter
+    result = col.update_one(
+        {"account_id": from_id, "balance": {"$gte": amount}},
+        {"$inc": {"balance": -amount, "version": 1}},
+        session=session
+    )
+    if result.matched_count == 0:
+        raise ValueError(f"Insufficient funds in {from_id} (need ${amount:.2f})")
+
+    # 2. Atomic credit
+    col.update_one(
+        {"account_id": to_id},
+        {"$inc": {"balance": amount, "version": 1}},
+        session=session
+    )
+
+    # 3. Transaction audit ledger record
+    col.database["transactions"].insert_one({
+        "from": from_id, "to": to_id, "amount": amount,
+        "description": description, "timestamp": time.time()
+    }, session=session)</code></pre>
+
+<h3>3.2 Rollback & Exponential Backoff Retry</h3>
+<ul>
+  <li><strong>Automatic Rollback:</strong> When an account has insufficient balance, <code>matched_count == 0</code> triggers a <code>ValueError</code>, cleanly aborting the transaction and leaving all account balances intact.</li>
+  <li><strong>Retry Logic:</strong> Transient conflicts (<code>TransientTransactionError</code>) are caught and retried up to 5 times using exponential backoff with jitter: <code>delay = 0.1 * 2^attempt + jitter</code>.</li>
+</ul>
+
+<h3>3.3 Lab 10.1 Execution Results</h3>
+<pre><code>=======================================
+  Lab 10.1: Bank Transfer Transaction
+=======================================
+  [OK] Created 3 accounts.
+  Current Balances:
+    ACC-001: Arjun        $  5,000.00
+    ACC-002: Sneha        $  3,000.00
+    ACC-003: Rahul        $  1,000.00
+
+=== Transfer $1500: ACC-001 -> ACC-002 ===
+  [OK] Transferred $1500.00: ACC-001 -> ACC-002  (attempt 1)
+  Current Balances:
+    ACC-001: Arjun        $  3,500.00
+    ACC-002: Sneha        $  4,500.00
+    ACC-003: Rahul        $  1,000.00
+
+=== Transfer $5000: ACC-003 -> ACC-001 (should ROLLBACK) ===
+  [ROLLBACK] Insufficient funds in ACC-003 (need $5000.00)
+  Current Balances:
+    ACC-001: Arjun        $  3,500.00
+    ACC-002: Sneha        $  4,500.00
+    ACC-003: Rahul        $  1,000.00
+
+=== Transfer $500: ACC-002 -> ACC-003 ===
+  [OK] Transferred $500.00: ACC-002 -> ACC-003  (attempt 1)
+  Current Balances:
+    ACC-001: Arjun        $  3,500.00
+    ACC-002: Sneha        $  4,000.00
+    ACC-003: Rahul        $  1,500.00
+
+=== Transaction Audit Log ===
+  ACC-001 -> ACC-002  $1500.00  (Salary payment)
+  ACC-002 -> ACC-003  $500.00   (Expense reimbursement)
+=====================
+  Lab 10.1 Complete
+=====================</code></pre>
+
+<h2>4. Lab 10.2: Inventory Reservation with Deadlock Handling</h2>
+<h3>4.1 Optimistic Concurrency Control (OCC)</h3>
+<p>To prevent overselling and lost updates without pessimistic locks, the reservation logic uses document versioning:</p>
+<pre><code>result = db.products.update_one(
+    {"product_id": product_id, "version": item["version"]},
+    {"$inc": {"stock": -qty, "version": 1}},
+    session=session
+)
+if result.matched_count == 0:
+    raise WriteConflict("Version mismatch - concurrent modification")</code></pre>
+
+<h3>4.2 Concurrency Benchmark & Throughput Sweep</h3>
+<p>Simultaneous threads contested the remaining 5 units of stock. The retry loop catches write conflicts and retries with short backoffs:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Concurrent Threads</th>
+      <th>Successes</th>
+      <th>Failures</th>
+      <th>Remaining Stock</th>
+      <th>Orders Created</th>
+      <th>Elapsed Time</th>
+      <th>Throughput (TPS)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td>1</td><td>0</td><td>4</td><td>1</td><td>0.025 s</td><td>39.29</td></tr>
+    <tr><td>4</td><td>4</td><td>0</td><td>1</td><td>4</td><td>0.401 s</td><td>9.98</td></tr>
+    <tr><td>8</td><td>5</td><td>3</td><td>0</td><td>5</td><td>0.416 s</td><td>12.02</td></tr>
+    <tr><td>16</td><td>5</td><td>11</td><td>0</td><td>5</td><td>0.195 s</td><td>25.66</td></tr>
+  </tbody>
+</table>
+
+<h3>4.3 Architectural Comparison</h3>
+<ul>
+  <li><strong>Multi-Document Transaction (Implemented):</strong> Couples stock decrement with order insertion atomically. Eliminates orphaned inventory decrements upon process failure.</li>
+  <li><strong>Non-Transactional (<code>findAndModify</code>):</strong> Yields slightly higher raw TPS due to lower lock overhead, but risks severe state inconsistency if order insertion fails after stock decrement.</li>
+</ul>
+
+<h2>5. Web Application Integration</h2>
+<p>The interactive web dashboard deployed at <code>http://localhost:5000</code> includes:</p>
+<ul>
+  <li><strong><code>/</code> (Dashboard):</strong> Architecture overview, container status, and lab navigation.</li>
+  <li><strong><code>/lab1</code>:</strong> Real-time balances, interactive transfers, one-click rollback test button, and transaction audit ledger.</li>
+  <li><strong><code>/lab2</code>:</strong> Live stock visualization, single order reservations, and concurrent multi-thread stress tester (4, 8, 10, 16 threads).</li>
+  <li><strong><code>/health</code>:</strong> MongoDB connection status API endpoint.</li>
+</ul>
+
+<h2>6. Demonstration & Verification Guide</h2>
+<p>To demonstrate for grading using the published Docker image:</p>
+<pre><code># 1. Pull container from Docker Hub
+docker pull gouthudocker/nosql-lab10:latest
+
+# 2. Launch the multi-container stack
+cd NoSQL_Lab10
+docker compose up -d
+
+# 3. Access Interactive Web Interface
+http://localhost:5000
+
+# 4. Or execute backend verification scripts
+docker exec nosql_lab10_web python /app/lab_01_bank_transfer.py
+docker exec nosql_lab10_web python /app/lab_02_inventory_reservation.py</code></pre>
+
+</body>
+</html>

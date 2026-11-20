@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Activity 1 - Production Replica Set with Docker Compose{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">
+            <i class="fa-brands fa-docker text-info me-2"></i> Activity 1: Production Replica Set Deployment
+        </h2>
+        <p class="text-muted mb-0">Docker Compose with keyFile Authentication & Bootstrapped Superuser</p>
+    </div>
+    <span class="badge badge-prod px-3 py-2 fs-6">
+        <i class="fa-solid fa-lock me-1"></i> Intra-Cluster HMAC Enforced
+    </span>
+</div>
+
+<!-- Architecture & Concept Overview -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 p-4">
+            <h5 class="fw-bold text-success mb-3">
+                <i class="fa-solid fa-key me-2"></i> keyFile Authentication vs Client RBAC
+            </h5>
+            <p class="small text-muted">
+                <strong>keyFile authentication</strong> is how replica set members trust <em>each other</em>, not how clients authenticate.
+                Every member shares the same cryptographically secure secret (756 bytes random base64). When nodes exchange heartbeats or sync operations, they use HMAC-SHA verification with the keyfile to prove they are legitimate members and reject any rogue <code>mongod</code>.
+            </p>
+            <div class="p-3 bg-light rounded-3 border small">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">Keyfile Path:</span>
+                    <code>/etc/mongodb/keyfile</code>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">Permissions:</span>
+                    <span class="badge bg-dark">0400 (Read Owner Only)</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Verification Mode:</span>
+                    <span class="badge bg-success">HMAC-SHA-256 Intra-Cluster</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 p-4">
+            <h5 class="fw-bold text-primary mb-3">
+                <i class="fa-solid fa-list-ol me-2"></i> Order of Operations: Bootstrap Localhost Exception
+            </h5>
+            <p class="small text-muted">
+                In production, starting nodes with <code>--auth</code> and <code>--keyFile</code> locks out unauthenticated access.
+                However, MongoDB provides the <strong>Localhost Exception</strong>: on a freshly initiated cluster with no users in the <code>admin</code> database, local connections are permitted to create the initial administrative superuser.
+            </p>
+            <ol class="small text-muted mb-0 ps-3">
+                <li class="mb-1"><strong>Generate keyfile:</strong> <code>openssl rand -base64 756 > keyfile</code></li>
+                <li class="mb-1"><strong>Start containers:</strong> with <code>--replSet rs0 --auth --keyFile</code></li>
+                <li class="mb-1"><strong>Initiate replica set:</strong> <code>rs.initiate(...)</code> forms the cluster</li>
+                <li class="mb-1"><strong>Create admin user:</strong> Superuser created on Primary before auth locks down</li>
+                <li><strong>Enforce cluster auth:</strong> All subsequent queries require credentials</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<!-- Live Interactive Replication Tester -->
+<div class="card card-custom mb-4">
+    <div class="card-header bg-white border-0 pt-3">
+        <h5 class="fw-bold mb-0">
+            <i class="fa-solid fa-bolt text-warning me-2"></i> Interactive Live Replication Tester
+        </h5>
+        <small class="text-muted">Write an order to PRIMARY (<code>mongo-rs0-1</code>) and verify immediate authenticated read from SECONDARY (<code>mongo-rs0-2</code>).</small>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 align-items-end mb-3">
+            <div class="col-md-5">
+                <label class="form-label small fw-bold">Item Description</label>
+                <input type="text" id="orderItem" class="form-control form-control-sm" value="Hydraulic Pump Sensor Gen-4">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold">Quantity</label>
+                <input type="number" id="orderQty" class="form-control form-control-sm" value="25" min="1">
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-sm btn-success w-100" onclick="testReplication()">
+                    <i class="fa-solid fa-play me-1"></i> Execute Write & Read Verification
+                </button>
+            </div>
+        </div>
+
+        <div id="testResultBox" class="d-none">
+            <div class="alert alert-success py-2 px-3 small mb-2" id="testAlert"></div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Document ID</th>
+                            <th>Item Name</th>
+                            <th>Quantity</th>
+                            <th>Status</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="testTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comparison Matrix vs Chapter 8 -->
+<div class="card card-custom mb-4">
+    <div class="card-header bg-white border-0 pt-3">
+        <h5 class="fw-bold mb-0">
+            <i class="fa-solid fa-code-compare text-danger me-2"></i> Side-by-Side Comparison: Chapter 8 vs Chapter 13
+        </h5>
+        <small class="text-muted">Complete breakdown of differences between Local Dev and Production Deployments.</small>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 20%;">Security Dimension</th>
+                        <th style="width: 35%;">Chapter 8 (Local Dev Replica Set)</th>
+                        <th style="width: 35%;">Chapter 13 (Production Replica Set)</th>
+                        <th style="width: 10%;">Significance</th>
+                    </tr>
+                </thead>
+                <tbody id="comparisonTableBody">
+                    <tr>
+                        <td class="fw-bold">Inter-Member Mutual Trust</td>
+                        <td class="text-danger"><i class="fa-solid fa-xmark me-1"></i> None. No keyfile; rogue nodes can join.</td>
+                        <td class="text-success"><i class="fa-solid fa-check me-1"></i> 756-byte keyfile; HMAC-SHA mutual trust enforced.</td>
+                        <td><span class="badge bg-danger">Critical</span></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Client Database Authentication</td>
+                        <td class="text-danger"><i class="fa-solid fa-xmark me-1"></i> Disabled (<code>--noauth</code>). Anyone has full write access.</td>
+                        <td class="text-success"><i class="fa-solid fa-check me-1"></i> Enforced (<code>--auth</code>). Requires admin credentials.</td>
+                        <td><span class="badge bg-danger">Critical</span></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Admin Superuser Bootstrap</td>
+                        <td class="text-muted">None. No user created up front.</td>
+                        <td class="text-success">Admin user created via Localhost Exception on Primary.</td>
+                        <td><span class="badge bg-primary">Essential</span></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Docker Healthcheck</td>
+                        <td class="text-muted">Unauthenticated ping command.</td>
+                        <td class="text-success">Authenticated ping: <code>-u admin -p AdminPass123! --authSource=admin</code>.</td>
+                        <td><span class="badge bg-secondary">Monitoring</span></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Connection String</td>
+                        <td><code>mongodb://host:27017,host:27018/?replicaSet=rs0</code></td>
+                        <td><code>mongodb://admin:AdminPass123!@host:27017,host:27018/admin?replicaSet=rs0&authSource=admin</code></td>
+                        <td><span class="badge bg-success">Standard</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Connection String Breakdown -->
+<div class="card card-custom">
+    <div class="card-header bg-white border-0 pt-3">
+        <h5 class="fw-bold mb-0">
+            <i class="fa-solid fa-link text-primary me-2"></i> Production Connection String Breakdown
+        </h5>
+        <small class="text-muted">Why each parameter is required by production MongoDB drivers.</small>
+    </div>
+    <div class="card-body">
+        <div class="code-block mb-3">
+mongodb://admin:AdminPass123!@host.docker.internal:27017,host.docker.internal:27018,host.docker.internal:27019/admin?replicaSet=rs0&authSource=admin
+        </div>
+        <div class="row g-2 small text-muted">
+            <div class="col-md-3">
+                <div class="p-2 border rounded bg-light">
+                    <strong>admin:AdminPass123!</strong><br>
+                    Credentials created during initial localhost bootstrap.
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-2 border rounded bg-light">
+                    <strong>3-Node Host Seedlist</strong><br>
+                    Enables driver discovery and transparent automated failover.
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-2 border rounded bg-light">
+                    <strong>replicaSet=rs0</strong><br>
+                    Instructs client to query topology and track Primary elections.
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-2 border rounded bg-light">
+                    <strong>authSource=admin</strong><br>
+                    Specifies database holding the user credential record.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function testReplication() {
+    const item = document.getElementById('orderItem').value;
+    const qty = parseInt(document.getElementById('orderQty').value) || 1;
+
+    fetch('/api/test-replication', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({item: item, quantity: qty})
+    })
+    .then(r => r.json())
+    .then(res => {
+        document.getElementById('testResultBox').classList.remove('d-none');
+        document.getElementById('testAlert').innerHTML = `
+            <i class="fa-solid fa-circle-check text-success me-1"></i>
+            <strong>Write Executed:</strong> ${res.write_status} &rarr; <strong>Read Verified:</strong> Replicated to ${res.read_target}!
+        `;
+        let rows = '';
+        res.recent_records.forEach(doc => {
+            rows += `
+                <tr>
+                    <td><code>${doc._id || 'N/A'}</code></td>
+                    <td class="fw-bold">${doc.item || 'N/A'}</td>
+                    <td>${doc.quantity || 'N/A'}</td>
+                    <td><span class="badge bg-success">${doc.status || 'Active'}</span></td>
+                    <td>${doc.timestamp || new Date().toISOString()}</td>
+                </tr>
+            `;
+        });
+        document.getElementById('testTableBody').innerHTML = rows;
+    })
+    .catch(err => {
+        alert('Error testing replication: ' + err);
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+
+{% block title %}Activity 1: Comparative Benchmark | NoSQL Lab 18{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1">
+        <i class="fa-solid fa-flask-vial"></i> Activity 1 • Comparative Capstone Lab
+      </div>
+      <h1 class="text-2xl font-extrabold text-white">Live Benchmark & Query Studio</h1>
+      <p class="text-xs text-slate-400 mt-1">
+        Benchmarks 10,000 synthetic transactions in MongoDB with compound indexes, comparing measured latencies with architectural estimates for Cassandra and Neo4j.
+      </p>
+    </div>
+
+    <!-- Action Toolbar -->
+    <div class="flex flex-wrap items-center gap-3">
+      <button id="btnGenerate" onclick="generateData()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+        <i class="fa-solid fa-database text-emerald-400"></i> Generate & Index 10k Docs
+      </button>
+      <button id="btnRunBenchmark" onclick="runBenchmark()" class="flex items-center gap-2 px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-lg shadow-emerald-500/20">
+        <i class="fa-solid fa-bolt"></i> Run Full Benchmark
+      </button>
+    </div>
+  </div>
+
+  <!-- Benchmark Results Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Latency Comparison Table -->
+    <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-table-list text-emerald-400"></i> Latency Comparison Matrix
+          </h2>
+          <span id="benchmarkTime" class="text-[11px] text-slate-400 font-mono">Status: Ready</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
+                <th class="py-2.5 px-3">Query Type</th>
+                <th class="py-2.5 px-3 text-emerald-400">MongoDB (Measured)</th>
+                <th class="py-2.5 px-3 text-cyan-400">Cassandra (Est.)</th>
+                <th class="py-2.5 px-3 text-sky-400">Neo4j (Est.)</th>
+                <th class="py-2.5 px-3">Count</th>
+              </tr>
+            </thead>
+            <tbody id="benchmarkTableBody" class="divide-y divide-slate-800/60 font-mono text-slate-200">
+              <tr>
+                <td colspan="5" class="py-8 text-center text-slate-500 font-sans">
+                  <i class="fa-solid fa-play-circle text-2xl mb-2 text-slate-600 block"></i>
+                  Click <strong>Run Full Benchmark</strong> to execute the 4 query types against MongoDB.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Benchmark Notes Footer -->
+      <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 space-y-1 font-sans">
+        <div><strong class="text-emerald-400">MongoDB:</strong> Measured directly on local/Atlas instance with appropriate B-Tree indexes.</div>
+        <div><strong class="text-cyan-400">Cassandra & Neo4j:</strong> Architectural estimates grounded in documented engine storage behavior.</div>
+      </div>
+    </div>
+
+    <!-- Chart Visualization -->
+    <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-chart-simple text-cyan-400"></i> Latency Breakdown (ms)
+        </h2>
+        <span class="text-[10px] text-slate-400">Lower is better</span>
+      </div>
+      <div class="relative flex-1 min-h-[260px] flex items-center justify-center">
+        <canvas id="benchmarkChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ad-Hoc MongoDB Query Runner & Explain Plan -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-terminal text-emerald-400"></i> Interactive Query Console &amp; Index Verifier
+        </h2>
+        <p class="text-xs text-slate-400">Execute parameterized MongoDB queries to inspect live latency and execution plans (<code class="text-emerald-300">IXSCAN</code> vs <code class="text-amber-300">COLLSCAN</code>)</p>
+      </div>
+      <div id="queryLatencyBadge" class="hidden text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-mono">
+        Latency: 0 ms
+      </div>
+    </div>
+
+    <!-- Query Filter Form -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-950 border border-slate-800/80 text-xs">
+      <div>
+        <label class="block text-slate-400 font-semibold mb-1">User ID</label>
+        <input type="text" id="queryUserId" value="U-0001" placeholder="e.g. U-0001" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono focus:border-emerald-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-slate-400 font-semibold mb-1">Min Risk Score (&gt;=)</label>
+        <input type="number" id="queryMinRisk" step="0.05" min="0" max="1" value="0.80" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono focus:border-emerald-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-slate-400 font-semibold mb-1">Category</label>
+        <select id="queryCategory" class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white focus:border-emerald-500 focus:outline-none">
+          <option value="">(All Categories)</option>
+          <option value="electronics">Electronics</option>
+          <option value="groceries">Groceries</option>
+          <option value="travel">Travel</option>
+          <option value="dining">Dining</option>
+          <option value="fashion">Fashion</option>
+          <option value="utilities">Utilities</option>
+        </select>
+      </div>
+      <div class="flex items-end">
+        <button onclick="runCustomQuery()" class="w-full py-2 px-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-bold transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-magnifying-glass"></i> Search Query
+        </button>
+      </div>
+    </div>
+
+    <!-- Query Results Preview -->
+    <div class="mt-4">
+      <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+        <span id="queryResultSummary">Results: 0 documents</span>
+        <span id="queryExplainStage" class="font-mono text-emerald-400">Execution Plan: Ready</span>
+      </div>
+      <div class="overflow-x-auto max-h-64 custom-scrollbar bg-slate-950 rounded-xl border border-slate-800">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-slate-900/80 sticky top-0 border-b border-slate-800 text-[10px] text-slate-400 uppercase">
+            <tr>
+              <th class="p-2.5">TXN ID</th>
+              <th class="p-2.5">User</th>
+              <th class="p-2.5">Merchant</th>
+              <th class="p-2.5">Category</th>
+              <th class="p-2.5">Amount</th>
+              <th class="p-2.5">Risk Score</th>
+              <th class="p-2.5">Fraud</th>
+              <th class="p-2.5">Device</th>
+            </tr>
+          </thead>
+          <tbody id="queryResultsTable" class="divide-y divide-slate-800/40 text-slate-300">
+            <tr>
+              <td colspan="8" class="p-6 text-center text-slate-500 font-sans">
+                Enter parameters and click <strong>Search Query</strong> to inspect documents.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Multi-Engine Query Syntax Reference -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2">
+      <i class="fa-solid fa-code text-cyan-400"></i> Multi-Database Query Syntax Equivalents
+    </h3>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 text-xs font-mono">
+      <!-- MongoDB -->
+      <div class="bg-slate-950 p-4 rounded-xl border border-emerald-500/30">
+        <div class="flex items-center justify-between font-sans text-xs font-bold text-emerald-400 mb-2">
+          <span>MongoDB (Python/MQL)</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10">B-Tree / Aggregation</span>
+        </div>
+        <pre class="text-slate-300 overflow-x-auto text-[11px] leading-relaxed">
+# Q1: User History
+col.find({"user_id": "U-0001"})\
+   .sort("timestamp", -1)\
+   .limit(50)
+
+# Q2: High-Risk
+col.find({"risk_score": {"$gt": 0.8}})
+
+# Q3: Category Analytics
+col.aggregate([
+  {"$group": {
+    "_id": "$category",
+    "total": {"$sum": "$amount"},
+    "count": {"$sum": 1}
+  }},
+  {"$sort": {"total": -1}}
+])</pre>
+      </div>
+
+      <!-- Cassandra -->
+      <div class="bg-slate-950 p-4 rounded-xl border border-cyan-500/30">
+        <div class="flex items-center justify-between font-sans text-xs font-bold text-cyan-400 mb-2">
+          <span>Cassandra (CQL)</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10">Partition Key</span>
+        </div>
+        <pre class="text-slate-300 overflow-x-auto text-[11px] leading-relaxed">
+-- Q1: User History (Optimal)
+SELECT * FROM transactions 
+WHERE user_id = 'U-0001' 
+LIMIT 50;
+
+-- Q2: High-Risk (Inefficient)
+CREATE INDEX idx_risk 
+  ON transactions(risk_score);
+SELECT * FROM transactions 
+WHERE risk_score > 0.8 
+ALLOW FILTERING;
+
+-- Q3: Analytics (Unsupported)
+-- Cassandra has no native $group
+-- Requires Apache Spark connector</pre>
+      </div>
+
+      <!-- Neo4j -->
+      <div class="bg-slate-950 p-4 rounded-xl border border-sky-500/30">
+        <div class="flex items-center justify-between font-sans text-xs font-bold text-sky-400 mb-2">
+          <span>Neo4j (Cypher)</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/10">Graph Adjacency</span>
+        </div>
+        <pre class="text-slate-300 overflow-x-auto text-[11px] leading-relaxed">
+// Q1: User History
+MATCH (u:User {id: 'U-0001'})
+  -[:MADE]->(t:Transaction)
+RETURN t ORDER BY t.timestamp DESC 
+LIMIT 50;
+
+// Q2: Fraud Ring Detection
+MATCH (u1:User)-[:SHARES_DEVICE*1..3]-(u2:User)
+WHERE u1.id = 'U-0001'
+WITH u1, u2, COUNT(*) AS shared
+WHERE shared >= 2
+RETURN u1.id, u2.id, shared;
+
+// Q3: Analytics (Slow across graph)
+MATCH (t:Transaction)
+RETURN t.category, SUM(t.amount);</pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let chartInstance = null;
+
+  function initChart() {
+    const ctx = document.getElementById('benchmarkChart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['User History', 'High-Risk (>0.8)', 'Category Analytics', 'Write 1k Inserts'],
+        datasets: [
+          {
+            label: 'MongoDB (Measured)',
+            data: [14.3, 19.4, 10.4, 51.9],
+            backgroundColor: 'rgba(0, 237, 100, 0.75)',
+            borderColor: '#00ED64',
+            borderWidth: 1.5,
+            borderRadius: 6
+          },
+          {
+            label: 'Cassandra (Est.)',
+            data: [3.5, 100.0, 0, 15.0],
+            backgroundColor: 'rgba(56, 189, 248, 0.75)',
+            borderColor: '#38bdf8',
+            borderWidth: 1.5,
+            borderRadius: 6
+          },
+          {
+            label: 'Neo4j (Est.)',
+            data: [10.0, 30.0, 150.0, 95.0],
+            backgroundColor: 'rgba(168, 85, 247, 0.75)',
+            borderColor: '#a855f7',
+            borderWidth: 1.5,
+            borderRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: { color: '#94a3b8', font: { size: 10 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.raw} ms`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(51, 65, 85, 0.3)' },
+            ticks: { color: '#94a3b8', font: { size: 10 } },
+            title: { display: true, text: 'Execution Time (ms)', color: '#64748b', font: { size: 10 } }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: '#94a3b8', font: { size: 10 } }
+          }
+        }
+      }
+    });
+  }
+
+  async function generateData() {
+    const btn = document.getElementById('btnGenerate');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating 10k Docs...`;
+    try {
+      const res = await fetch('/api/lab1/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count: 10000, fraud_pct: 200 })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Generated & indexed 10,000 transactions in ${data.insert_time_ms} ms!`, 'success');
+        runBenchmark();
+      } else {
+        showToast(data.error || 'Failed to generate data', 'error');
+      }
+    } catch (e) {
+      showToast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-database text-emerald-400"></i> Generate & Index 10k Docs`;
+    }
+  }
+
+  async function runBenchmark() {
+    const btn = document.getElementById('btnRunBenchmark');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Running Benchmark...`;
+    try {
+      const res = await fetch('/api/lab1/benchmark', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        renderBenchmarkTable(data.results);
+        updateChart(data.results);
+        document.getElementById('benchmarkTime').textContent = `Benchmark Run: ${data.timestamp}`;
+        showToast('Live MongoDB Benchmark complete!', 'success');
+      }
+    } catch (e) {
+      showToast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Run Full Benchmark`;
+    }
+  }
+
+  function renderBenchmarkTable(results) {
+    const tbody = document.getElementById('benchmarkTableBody');
+    tbody.innerHTML = '';
+    results.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-800/40 transition';
+      tr.innerHTML = `
+        <td class="py-2.5 px-3">
+          <div class="font-bold text-white font-sans">${r.query}</div>
+          <div class="text-[10px] text-slate-400 font-sans">${r.description || ''}</div>
+        </td>
+        <td class="py-2.5 px-3 text-emerald-400 font-bold">${r.mongo_latency_ms} ms</td>
+        <td class="py-2.5 px-3 text-cyan-400">${r.cassandra_latency}</td>
+        <td class="py-2.5 px-3 text-sky-400">${r.neo4j_latency}</td>
+        <td class="py-2.5 px-3 text-slate-300">${r.mongo_count}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateChart(results) {
+    if (!chartInstance) return;
+    const mongoLatencies = results.map(r => r.mongo_latency_ms);
+    chartInstance.data.datasets[0].data = mongoLatencies;
+    chartInstance.update();
+  }
+
+  async function runCustomQuery() {
+    const userId = document.getElementById('queryUserId').value.trim();
+    const minRisk = document.getElementById('queryMinRisk').value.trim();
+    const category = document.getElementById('queryCategory').value;
+
+    const params = new URLSearchParams();
+    if (userId) params.append('user_id', userId);
+    if (minRisk) params.append('min_risk', minRisk);
+    if (category) params.append('category', category);
+    params.append('limit', 25);
+
+    try {
+      const res = await fetch(`/api/lab1/query?${params.toString()}`);
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('queryLatencyBadge').classList.remove('hidden');
+        document.getElementById('queryLatencyBadge').textContent = `Execution Time: ${data.latency_ms} ms`;
+        document.getElementById('queryResultSummary').textContent = `Matched: ${data.count} documents (showing up to 25)`;
+        document.getElementById('queryExplainStage').textContent = `Plan Stage: ${data.stage} ${data.input_stage !== 'None' ? '(' + data.input_stage + ')' : ''}`;
+
+        const tbody = document.getElementById('queryResultsTable');
+        tbody.innerHTML = '';
+        if (data.results.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500 font-sans">No transactions match these filter conditions.</td></tr>`;
+          return;
+        }
+
+        data.results.forEach(t => {
+          const tr = document.createElement('tr');
+          tr.className = t.is_fraud ? 'bg-rose-950/20 hover:bg-rose-950/30' : 'hover:bg-slate-800/40';
+          tr.innerHTML = `
+            <td class="p-2.5 text-slate-200">${t.txn_id}</td>
+            <td class="p-2.5 text-cyan-300">${t.user_id}</td>
+            <td class="p-2.5 text-slate-400">${t.merchant_id}</td>
+            <td class="p-2.5 text-slate-300 capitalize">${t.category}</td>
+            <td class="p-2.5 text-emerald-400">$${t.amount.toFixed(2)}</td>
+            <td class="p-2.5 ${t.risk_score > 0.8 ? 'text-amber-400 font-bold' : 'text-slate-400'}">${t.risk_score.toFixed(4)}</td>
+            <td class="p-2.5">${t.is_fraud ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30">FRAUD</span>' : '<span class="text-slate-500">Normal</span>'}</td>
+            <td class="p-2.5 text-slate-400">${t.device_id}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initChart();
+    runBenchmark();
+  });
+</script>
+{% endblock %}

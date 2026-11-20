@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}NoSQL Lab 17 – Overview &amp; Vector System Dashboard{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<div class="hero-banner">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center mb-2">
+                <span class="badge bg-success-subtle text-success border border-success me-2 px-3 py-1">
+                    <span class="pulse-dot"></span> LIVE VECTOR ENVIRONMENT
+                </span>
+                <span class="text-white-50 small">Advanced NoSQL &amp; Semantic Search Engineering</span>
+            </div>
+            <h1 class="mb-1 fw-bold fs-2 text-white">
+                <i class="fa-solid fa-layer-group text-success me-2"></i>
+                Lab 17: Build a RAG Pipeline &amp; Compare HNSW vs. IVF Vector Indexes
+            </h1>
+            <p class="mb-0 text-white-50">
+                End-to-End Retrieval-Augmented Generation, Brute-Force Cosine Similarity &amp; High-Dimension Approximate Nearest Neighbor (ANN) Index Benchmarks
+            </p>
+        </div>
+        <div class="text-end">
+            <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary text-start">
+                <div class="small text-white-50">Student Registration:</div>
+                <div class="fw-bold text-white fs-6">M Gouthami &bull; 24BTRCL130</div>
+                <div class="small text-success mt-1">
+                    <i class="fa-brands fa-docker me-1"></i> gouthudocker/nosql-lab17:latest
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Status Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card card-custom p-4 stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">MongoDB Status</span>
+                <i class="fa-solid fa-server fs-5 text-success"></i>
+            </div>
+            {% if connected %}
+                <div class="metric-val text-success">Online</div>
+                <div class="small text-muted mt-1"><i class="fa-solid fa-tag me-1"></i> MongoDB v{{ version }}</div>
+            {% else %}
+                <div class="metric-val text-danger">Offline</div>
+                <div class="small text-danger mt-1">Local / Container Fallback Active</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-4 stat-card-blue">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">RAG Document Chunks</span>
+                <i class="fa-solid fa-file-lines fs-5 text-primary"></i>
+            </div>
+            <div class="metric-val text-primary" id="kpi-chunks">{{ doc_count }}</div>
+            <div class="small text-muted mt-1"><i class="fa-solid fa-database me-1"></i> nosql_labs.rag_documents</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-4 stat-card-purple">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Embedding Dimensions</span>
+                <i class="fa-solid fa-arrows-split-up-and-left fs-5 text-purple"></i>
+            </div>
+            <div class="metric-val text-dark">384 <span class="fs-6 text-muted">/ 64</span></div>
+            <div class="small text-muted mt-1"><i class="fa-solid fa-fingerprint me-1"></i> Unit-Normalized Vectors</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-4 stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">ANN Index Types</span>
+                <i class="fa-solid fa-network-wired fs-5 text-success"></i>
+            </div>
+            <div class="metric-val text-success">HNSW &amp; IVF</div>
+            <div class="small text-muted mt-1"><i class="fa-solid fa-bullseye me-1"></i> Recall@K vs Vectors Compared</div>
+        </div>
+    </div>
+</div>
+
+<!-- Activities Overview Grid -->
+<div class="row g-4 mb-4">
+    <!-- Activity 1 Card -->
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="badge badge-rag px-3 py-2 fw-semibold">ACTIVITY 17.1</span>
+                <i class="fa-solid fa-robot fs-3 text-primary"></i>
+            </div>
+            <h3 class="fw-bold fs-4 mb-2">Build a Simple RAG Pipeline</h3>
+            <p class="text-muted mb-3">
+                Chunk real NoSQL technical knowledge, generate deterministic unit-normalized vector embeddings,
+                index in MongoDB, perform exact brute-force cosine similarity retrieval, and construct LLM prompts
+                with multi-turn conversation memory.
+            </p>
+            <div class="bg-light p-3 rounded-3 mb-3 border">
+                <div class="fw-semibold small text-dark mb-1"><i class="fa-solid fa-circle-check text-success me-1"></i> Core Features:</div>
+                <ul class="small text-muted mb-0 ps-3">
+                    <li>Document Chunking (50-word bounded passages)</li>
+                    <li>Unit-normalized pseudo-random mock embeddings (384-d)</li>
+                    <li>MongoDB collection storage (<code>nosql_labs.rag_documents</code>)</li>
+                    <li>Cosine similarity dot product ranking &amp; top-k retrieval</li>
+                    <li>LLM contextual prompt assembly with conversational history</li>
+                    <li>Prediction vs Actual retrieval verification</li>
+                </ul>
+            </div>
+            <div class="mt-auto pt-2 d-flex gap-2">
+                <a href="/lab1" class="btn btn-primary px-4 fw-semibold">
+                    <i class="fa-solid fa-play me-1"></i> Launch RAG Explorer
+                </a>
+                <button class="btn btn-outline-secondary px-3" onclick="triggerIngest()">
+                    <i class="fa-solid fa-rotate me-1"></i> Re-ingest Docs
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity 2 Card -->
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="badge badge-hnsw px-3 py-2 fw-semibold">ACTIVITY 17.2</span>
+                <i class="fa-solid fa-chart-diagram fs-3 text-success"></i>
+            </div>
+            <h3 class="fw-bold fs-4 mb-2">Compare HNSW and IVF Vector Index Types</h3>
+            <p class="text-muted mb-3">
+                Analyze why approximate search exists. Evaluate cluster-based partitioning (IVF) against
+                graph-based greedy navigation (Simplified NSW/HNSW) on synthetic vector datasets. Measure
+                Recall@k and understand why "Vectors Compared per Query" is the true metric of scale.
+            </p>
+            <div class="bg-light p-3 rounded-3 mb-3 border">
+                <div class="fw-semibold small text-dark mb-1"><i class="fa-solid fa-circle-check text-success me-1"></i> Core Features:</div>
+                <ul class="small text-muted mb-0 ps-3">
+                    <li>Exact brute-force ground truth (100% Recall baseline)</li>
+                    <li>IVF (Inverted File Index) with Lloyd's K-Means clustering</li>
+                    <li>Simplified NSW (Hierarchical Navigable Small World relative)</li>
+                    <li>Empirical Recall@k calculation vs Ground Truth</li>
+                    <li>Deep dive: Vectors Compared per Query vs Python wall-clock time</li>
+                </ul>
+            </div>
+            <div class="mt-auto pt-2 d-flex gap-2">
+                <a href="/lab2" class="btn btn-success px-4 fw-semibold">
+                    <i class="fa-solid fa-chart-line me-1"></i> Launch ANN Benchmark
+                </a>
+                <a href="/architecture" class="btn btn-outline-secondary px-3">
+                    <i class="fa-solid fa-book-open me-1"></i> Read Theory
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seed Documents Preview -->
+<div class="card card-custom p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold fs-5 mb-0">
+            <i class="fa-solid fa-book-bookmark text-success me-2"></i>
+            Seeded Knowledge Base (4 Technical Documents)
+        </h4>
+        <span class="badge bg-secondary-subtle text-secondary border">MongoDB Source Collection</span>
+    </div>
+    <div class="row g-3">
+        {% for doc in documents %}
+        <div class="col-md-6">
+            <div class="border rounded-3 p-3 bg-light h-100">
+                <div class="fw-bold text-dark mb-1">
+                    <i class="fa-solid fa-file-text text-primary me-2"></i>{{ doc.title }}
+                </div>
+                <p class="small text-muted mb-0" style="line-height: 1.5;">
+                    {{ doc.content[:160] }}...
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Quick CLI / Docker Demonstration -->
+<div class="card card-custom p-4">
+    <h4 class="fw-bold fs-5 mb-3">
+        <i class="fa-brands fa-docker text-primary me-2"></i>
+        Instant CLI Execution &amp; Docker Pull
+    </h4>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="small fw-semibold text-muted mb-1">Run Labs in Python CLI:</div>
+            <div class="code-block py-2">
+                py run_all.py<br/>
+                <span class="text-secondary"># or run individually:</span><br/>
+                py lab_01_rag_pipeline.py<br/>
+                py lab_02_hnsw_vs_ivf.py
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="small fw-semibold text-muted mb-1">Pull &amp; Run Docker Image:</div>
+            <div class="code-block py-2">
+                docker pull gouthudocker/nosql-lab17:latest<br/>
+                docker run -p 5000:5000 gouthudocker/nosql-lab17:latest<br/>
+                <span class="text-success"># Access web interface at http://localhost:5000</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function triggerIngest() {
+    fetch('/api/rag/ingest', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('kpi-chunks').textContent = data.chunks_count;
+                alert(data.message);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(e => alert('Failed: ' + e));
+}
+</script>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}NoSQL Lab 14 – Overview{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="hero-banner">
+  <div class="d-flex align-items-center gap-3 flex-wrap">
+    <div>
+      <h1 class="mb-1 fw-bold fs-3">
+        <i class="fa-solid fa-gauge-high me-2 text-success"></i>
+        NoSQL Lab 14: Monitoring, Backup &amp; Restore
+      </h1>
+      <p class="mb-0 text-white-50">
+        MongoDB Production Observability &amp; Disaster Recovery — M Gouthami (24BTRCL130)
+      </p>
+    </div>
+    <div class="ms-auto text-end">
+      <span class="badge bg-success fs-6 px-3 py-2">
+        <i class="fa-solid fa-circle me-1"></i>
+        {% if connected %}MongoDB {{ version }}{% else %}Offline{% endif %}
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Status row -->
+<div class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="card card-custom p-4 stat-card text-center">
+      <i class="fa-solid fa-database metric-card-icon text-success"></i>
+      <div class="text-muted small mb-1">MongoDB Status</div>
+      {% if connected %}
+        <div class="metric-val text-success">Connected</div>
+        <div class="text-muted small mt-1">{{ version }}</div>
+      {% else %}
+        <div class="metric-val text-danger">Offline</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card card-custom p-4 stat-card text-center">
+      <i class="fa-solid fa-server metric-card-icon text-info"></i>
+      <div class="text-muted small mb-1">Host</div>
+      <div class="metric-val text-info" style="font-size:1.1rem;">{{ host }}</div>
+      <div class="text-muted small mt-1">{{ now }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card card-custom p-4 stat-card text-center">
+      <i class="fa-solid fa-wrench metric-card-icon text-warning"></i>
+      <div class="text-muted small mb-1">Database Tools</div>
+      {% if tools_ok %}
+        <div class="metric-val text-success"><i class="fa-solid fa-check"></i> Available</div>
+        <div class="text-muted small mt-1">mongodump · mongorestore</div>
+      {% else %}
+        <div class="metric-val text-warning"><i class="fa-solid fa-triangle-exclamation"></i> Not found</div>
+        <div class="text-muted small mt-1">Activity 2 limited</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card card-custom p-4 stat-card text-center">
+      <i class="fa-brands fa-docker metric-card-icon text-primary"></i>
+      <div class="text-muted small mb-1">Docker Image</div>
+      <div class="metric-val text-primary" style="font-size:.95rem;">nosql-lab14</div>
+      <div class="text-muted small mt-1">gouthudocker/nosql-lab14:latest</div>
+    </div>
+  </div>
+</div>
+
+<!-- Activity cards -->
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <div class="card card-custom h-100">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center mb-3">
+          <span class="badge bg-success px-3 py-2 me-3 fs-6">14.1</span>
+          <h5 class="mb-0">Monitoring Dashboard</h5>
+        </div>
+        <p class="text-muted">
+          Live <code>serverStatus</code> polling — connections, op counters, WiredTiger cache metrics,
+          threshold alerts, and SSE-streamed real-time updates logged to <code>logs/metrics.log</code>.
+        </p>
+        <ul class="text-muted small mb-3">
+          <li>Connections current / available</li>
+          <li>Insert / Query / Update / Delete counters</li>
+          <li>WiredTiger cache % with 80% alert threshold</li>
+          <li>Replication lag detection</li>
+          <li>Persistent JSON metrics log</li>
+        </ul>
+        <a href="/lab1" class="btn btn-success w-100">
+          <i class="fa-solid fa-chart-line me-2"></i>Open Monitoring Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card card-custom h-100">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center mb-3">
+          <span class="badge bg-warning text-dark px-3 py-2 me-3 fs-6">14.2</span>
+          <h5 class="mb-0">Backup &amp; Restore Verification</h5>
+        </div>
+        <p class="text-muted">
+          End-to-end backup proof: seed → <code>mongodump</code> → simulate data loss →
+          <code>mongorestore</code> → verify via <strong>document count + SHA-256 checksum</strong>.
+        </p>
+        <ul class="text-muted small mb-3">
+          <li>500 deterministic seed documents</li>
+          <li>Timestamped backup directories</li>
+          <li>SHA-256 content checksum (order-independent)</li>
+          <li>RTO timing for dump and restore phases</li>
+          <li>Dual verification: count AND checksum</li>
+        </ul>
+        <a href="/lab2" class="btn btn-warning w-100 text-dark">
+          <i class="fa-solid fa-box-archive me-2"></i>Open Backup Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Concepts -->
+<div class="card card-custom mb-4">
+  <div class="card-body p-4">
+    <h5 class="mb-3"><i class="fa-solid fa-lightbulb text-warning me-2"></i>Key Concepts Covered</h5>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="p-3 bg-light rounded">
+          <div class="fw-bold mb-1 text-success"><i class="fa-solid fa-eye me-1"></i>serverStatus</div>
+          <small class="text-muted">MongoDB's built-in metrics endpoint. All production monitoring tools — Atlas charts, Prometheus exporters — ultimately read this same data.</small>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 bg-light rounded">
+          <div class="fw-bold mb-1 text-info"><i class="fa-solid fa-bell me-1"></i>Threshold Alerting</div>
+          <small class="text-muted">A raw number is meaningless without context. Thresholds turn metrics into actionable signals — cache &gt;80%, connections &gt;80% of max.</small>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 bg-light rounded">
+          <div class="fw-bold mb-1 text-warning"><i class="fa-solid fa-clock-rotate-left me-1"></i>RPO &amp; RTO</div>
+          <small class="text-muted">Recovery Point Objective (how much data can be lost) and Recovery Time Objective (how long you can be down). Timing your restore gives a real RTO number.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

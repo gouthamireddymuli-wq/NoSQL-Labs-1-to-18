@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Graph & Fraud Ring Traversal | NoSQL Lab 18{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-400 mb-1">
+        <i class="fa-solid fa-circle-nodes"></i> Deep Relationship Traversal
+      </div>
+      <h1 class="text-2xl font-extrabold text-white">Fraud Ring Detection & Graph Exploration</h1>
+      <p class="text-xs text-slate-400 mt-1">
+        Demonstrates the architectural justification for adding Neo4j to the polyglot stack: uncovering coordinated fraud networks sharing hardware device identifiers.
+      </p>
+    </div>
+
+    <button onclick="loadFraudRings()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition shadow-lg shadow-sky-500/20">
+      <i class="fa-solid fa-arrows-rotate"></i> Refresh Detected Rings
+    </button>
+  </div>
+
+  <!-- Graph Justification Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+      <div class="font-bold text-sky-400 mb-1 flex items-center gap-2">
+        <i class="fa-solid fa-diagram-project"></i> Neo4j: Index-Free Adjacency
+      </div>
+      <p class="text-slate-400 leading-relaxed">
+        Traversing 3 hops of <code class="text-sky-300">(:User)-[:SHARES_DEVICE]-(:User)</code> follows in-memory memory pointers in <span class="text-emerald-400 font-semibold">O(k)</span> time, completely independent of total database size (whether 10k or 100M transactions).
+      </p>
+    </div>
+
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+      <div class="font-bold text-emerald-400 mb-1 flex items-center gap-2">
+        <i class="fa-solid fa-database"></i> MongoDB: $graphLookup
+      </div>
+      <p class="text-slate-400 leading-relaxed">
+        MongoDB can search recursive references via <code class="text-emerald-300">$graphLookup</code>, but at 10M+ scale, multiple recursive B-Tree index lookups become memory-intensive and latency-bound.
+      </p>
+    </div>
+
+    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+      <div class="font-bold text-amber-400 mb-1 flex items-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation"></i> Cassandra: Fundamental Bottleneck
+      </div>
+      <p class="text-slate-400 leading-relaxed">
+        Cassandra has <strong>no graph or join capabilities</strong>. Finding accounts sharing devices requires querying each account independently, bringing millions of keys to the client application to compute intersections in code.
+      </p>
+    </div>
+  </div>
+
+  <!-- Discovered Fraud Rings Table -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-fingerprint text-rose-400"></i> Discovered Shared Device Clusters (Fraud Rings)
+        </h2>
+        <p class="text-xs text-slate-400">Physical devices associated with multiple distinct accounts exhibiting suspicious activity</p>
+      </div>
+      <span id="ringCountBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 font-mono">
+        Scanning...
+      </span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs font-mono">
+        <thead class="bg-slate-950/80 border-b border-slate-800 text-[10px] text-slate-400 uppercase">
+          <tr>
+            <th class="p-3">Device Identifier</th>
+            <th class="p-3">Linked User Accounts</th>
+            <th class="p-3">Unique Users</th>
+            <th class="p-3 text-rose-400">Fraud Count</th>
+            <th class="p-3">Total Volume</th>
+            <th class="p-3">Peak Risk</th>
+            <th class="p-3">Locations</th>
+          </tr>
+        </thead>
+        <tbody id="fraudRingsTableBody" class="divide-y divide-slate-800/50 text-slate-300">
+          <tr>
+            <td colspan="7" class="p-8 text-center text-slate-500 font-sans">
+              <i class="fa-solid fa-spinner fa-spin text-xl text-sky-400 block mb-2"></i>
+              Analyzing multi-account device fingerprints in MongoDB...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Cypher Query Showcase -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-base font-bold text-white flex items-center gap-2">
+        <i class="fa-solid fa-code-branch text-sky-400"></i> Neo4j Cypher Implementation for Production Ring Walk
+      </h3>
+      <span class="text-[10px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 font-mono">Target Graph Query</span>
+    </div>
+    <pre class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sky-300 font-mono text-xs overflow-x-auto leading-relaxed">
+// Find all secondary and tertiary users linked to target suspect U-0001 via shared devices
+MATCH path = (u1:User {id: 'U-0001'})-[:SHARES_DEVICE*1..3]-(u2:User)
+WHERE u1 &lt;&gt; u2
+WITH u1, u2, COUNT(DISTINCT path) AS shared_signals, COLLECT(DISTINCT [n in nodes(path) WHERE n:Device | n.id]) AS devices
+WHERE shared_signals &gt;= 2
+RETURN u1.id AS primary_suspect, 
+       u2.id AS linked_account, 
+       shared_signals, 
+       devices
+ORDER BY shared_signals DESC 
+LIMIT 20;</pre>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  async function loadFraudRings() {
+    try {
+      const res = await fetch('/api/lab1/fraud-rings');
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('ringCountBadge').textContent = `${data.shared_devices_count} Shared Devices Detected`;
+        const tbody = document.getElementById('fraudRingsTableBody');
+        tbody.innerHTML = '';
+        if (data.rings.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500 font-sans">No shared devices found. Ensure at least 10,000 transactions are generated.</td></tr>`;
+          return;
+        }
+
+        data.rings.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.className = r.fraud_count > 0 ? 'bg-rose-950/20 hover:bg-rose-950/30' : 'hover:bg-slate-800/40';
+          const usersList = r.users.map(u => `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 text-[10px] mr-1">${u}</span>`).join('');
+          const locsList = r.locations ? r.locations.slice(0, 3).join(', ') : '';
+
+          tr.innerHTML = `
+            <td class="p-3 font-bold text-white">${r.device_id}</td>
+            <td class="p-3 font-sans max-w-xs">${usersList}</td>
+            <td class="p-3 font-bold text-slate-200">${r.unique_users_count} accounts</td>
+            <td class="p-3 font-bold ${r.fraud_count > 0 ? 'text-rose-400' : 'text-slate-500'}">${r.fraud_count} cases</td>
+            <td class="p-3 text-slate-300">${r.total_txns} txns</td>
+            <td class="p-3 ${r.max_risk > 0.8 ? 'text-amber-400 font-bold' : 'text-slate-400'}">${r.max_risk.toFixed(4)}</td>
+            <td class="p-3 text-slate-400 text-[11px] font-sans">${locsList}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    } catch (e) {
+      showToast('Error loading fraud rings: ' + e.message, 'error');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadFraudRings);
+</script>
+{% endblock %}

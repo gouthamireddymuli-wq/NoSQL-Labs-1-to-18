@@ -1,0 +1,66 @@
+version: "3.8"
+
+services:
+  # Lab 9 Web Dashboard & Interactive Demonstration App
+  web-app:
+    image: gouthudocker/nosql-lab-9:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nosql-lab9-web
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - REPLICA_SET_URI=mongodb://mongo-rs0-1:27017,mongo-rs0-2:27018,mongo-rs0-3:27019/?replicaSet=rs0&serverSelectionTimeoutMS=3000
+    depends_on:
+      - mongo-rs0-1
+      - mongo-rs0-2
+      - mongo-rs0-3
+    networks:
+      - mongo-cluster-net
+
+  # Node 1: Primary Candidate (Port 27017)
+  mongo-rs0-1:
+    image: mongo:7
+    container_name: mongo-rs0-1
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27017:27017"
+    networks:
+      - mongo-cluster-net
+    volumes:
+      - node1_data:/data/db
+
+  # Node 2: Secondary 1 (Port 27018) - Target for network partition
+  mongo-rs0-2:
+    image: mongo:7
+    container_name: mongo-rs0-2
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27018"]
+    ports:
+      - "27018:27018"
+    networks:
+      - mongo-cluster-net
+    volumes:
+      - node2_data:/data/db
+
+  # Node 3: Secondary 2 (Port 27019)
+  mongo-rs0-3:
+    image: mongo:7
+    container_name: mongo-rs0-3
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27019"]
+    ports:
+      - "27019:27019"
+    networks:
+      - mongo-cluster-net
+    volumes:
+      - node3_data:/data/db
+
+networks:
+  mongo-cluster-net:
+    driver: bridge
+
+volumes:
+  node1_data:
+  node2_data:
+  node3_data:

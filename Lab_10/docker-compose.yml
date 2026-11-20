@@ -1,0 +1,76 @@
+services:
+
+  # ── MongoDB replica-set primary ──────────────────────────────────────────
+  mongo:
+    image: mongo:7.0
+    container_name: mongo_rs0
+    hostname: mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - lab10_net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 30s
+
+  # ── Replica-set initialiser (runs once then exits) ───────────────────────
+  rs-init:
+    image: mongo:7.0
+    container_name: rs_init
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - lab10_net
+    command: >
+      mongosh --host mongo:27017 --quiet --eval
+      "try {
+         const st = rs.status();
+         if (st.ok === 1) { print('already init'); }
+         else { rs.initiate({_id:'rs0', members:[{_id:0, host:'mongo:27017'}]}); }
+       } catch(e) {
+         rs.initiate({_id:'rs0', members:[{_id:0, host:'mongo:27017'}]});
+       }
+       for (let i = 0; i < 30; i++) {
+         try {
+           const h = db.hello();
+           if (h.isWritablePrimary) { print('Primary ready'); quit(0); }
+         } catch(e) {}
+         sleep(1000);
+       }
+       print('Timed out waiting for Primary');
+       quit(1);"
+    restart: "no"
+
+  # ── Flask web application ────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nosql-lab10:latest
+    container_name: nosql_lab10_web
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rs-init:
+        condition: service_completed_successfully
+    environment:
+      MONGO_URI: "mongodb://mongo:27017/?replicaSet=rs0&serverSelectionTimeoutMS=10000"
+    ports:
+      - "5000:5000"
+    networks:
+      - lab10_net
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+
+networks:
+  lab10_net:
+    driver: bridge

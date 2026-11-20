@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-11-16T16:48:19.863188+00:00",
+  "student": "M Gouthami (24BTRCL130)",
+  "lab": "Lab 9.1",
+  "doc_count": 1000,
+  "results": [
+    {
+      "label": "w1_j0",
+      "write_concern": "1",
+      "journal": false,
+      "doc_count": 1000,
+      "total_time_sec": 0.33,
+      "avg_ms": 0.323,
+      "p50_ms": 0.163,
+      "p90_ms": 0.563,
+      "p99_ms": 1.149,
+      "throughput_ops_sec": 3029.3,
+      "description": "w:1 (Primary Only)"
+    },
+    {
+      "label": "wmajority_j0",
+      "write_concern": "majority",
+      "journal": false,
+      "doc_count": 1000,
+      "total_time_sec": 0.22,
+      "avg_ms": 2.014,
+      "p50_ms": 1.951,
+      "p90_ms": 2.145,
+      "p99_ms": 2.445,
+      "throughput_ops_sec": 4540.1,
+      "description": "w:majority (Quorum 2/3 Nodes)"
+    },
+    {
+      "label": "w3_j0",
+      "write_concern": "3",
+      "journal": false,
+      "doc_count": 1000,
+      "total_time_sec": 0.224,
+      "avg_ms": 3.618,
+      "p50_ms": 3.548,
+      "p90_ms": 3.736,
+      "p99_ms": 4.037,
+      "throughput_ops_sec": 4458.4,
+      "description": "w:all (All 3 Nodes)"
+    }
+  ]
+}

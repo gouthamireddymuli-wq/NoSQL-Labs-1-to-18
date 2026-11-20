@@ -1,0 +1,149 @@
+[
+  {
+    "_id": {
+      "$oid": "6af986e7cab1dfd39f5f5e6d"
+    },
+    "title": "Advanced Database Systems",
+    "code": "CS401",
+    "instructor": "Dr. Priya Sharma",
+    "credits": 4,
+    "schedule": {
+      "days": [
+        "Monday",
+        "Wednesday"
+      ],
+      "times": "10:00 - 11:30 AM",
+      "room": "Lecture Hall 201"
+    },
+    "roster": [
+      {
+        "name": "Arjun Mehta",
+        "ID": "STU1001",
+        "grade": "A"
+      },
+      {
+        "name": "Sneha Reddy",
+        "ID": "STU1002",
+        "grade": "B+"
+      },
+      {
+        "name": "Rahul Kumar",
+        "ID": "STU1003",
+        "grade": "A-"
+      },
+      {
+        "name": "Divya Patel",
+        "ID": "STU1004",
+        "grade": "B"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af986e7cab1dfd39f5f5e6e"
+    },
+    "title": "Machine Learning & Pattern Recognition",
+    "code": "CS402",
+    "instructor": "Dr. Anil Gupta",
+    "credits": 4,
+    "schedule": {
+      "days": [
+        "Tuesday",
+        "Thursday"
+      ],
+      "times": "02:00 - 03:30 PM",
+      "room": "Science Block 305"
+    },
+    "roster": [
+      {
+        "name": "Arjun Mehta",
+        "ID": "STU1001",
+        "grade": null
+      },
+      {
+        "name": "Kavya Nair",
+        "ID": "STU1005",
+        "grade": "A"
+      },
+      {
+        "name": "Vikram Singh",
+        "ID": "STU1006",
+        "grade": "A+"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af986e7cab1dfd39f5f5e6f"
+    },
+    "title": "Natural Language Processing",
+    "code": "CS403",
+    "instructor": "Dr. Priya Sharma",
+    "credits": 3,
+    "schedule": {
+      "days": [
+        "Monday",
+        "Wednesday",
+        "Friday"
+      ],
+      "times": "09:00 - 10:00 AM",
+      "room": "Lab Block 102"
+    },
+    "roster": [
+      {
+        "name": "Sneha Reddy",
+        "ID": "STU1002",
+        "grade": "A"
+      },
+      {
+        "name": "Priya Das",
+        "ID": "STU1007",
+        "grade": "A-"
+      },
+      {
+        "name": "Arjun Mehta",
+        "ID": "STU1001",
+        "grade": null
+      },
+      {
+        "name": "Neha Gupta",
+        "ID": "STU1008",
+        "grade": "B+"
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af986e7cab1dfd39f5f5e70"
+    },
+    "title": "Distributed Cloud Computing",
+    "code": "CS404",
+    "instructor": "Dr. Meera Joshi",
+    "credits": 3,
+    "schedule": {
+      "days": [
+        "Monday",
+        "Thursday"
+      ],
+      "times": "11:30 AM - 01:00 PM",
+      "room": "Tech Tower 404"
+    },
+    "roster": [
+      {
+        "name": "Rahul Kumar",
+        "ID": "STU1003",
+        "grade": "A"
+      },
+      {
+        "name": "Kavya Nair",
+        "ID": "STU1005",
+        "grade": "B+"
+      },
+      {
+        "name": "Amit Verma",
+        "ID": "STU1009",
+        "grade": "A"
+      }
+    ]
+  }
+]

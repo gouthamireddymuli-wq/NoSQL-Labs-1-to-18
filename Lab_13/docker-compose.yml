@@ -1,0 +1,17 @@
+services:
+  web:
+    build: .
+    image: gouthudocker/nosql-lab13:latest
+    container_name: nosql_lab13_web
+    restart: unless-stopped
+    ports:
+      - "5003:5000"
+    environment:
+      MONGO_URI: mongodb://admin:AdminPass123!@mongo-rs0-1:27017,mongo-rs0-2:27017,mongo-rs0-3:27017/admin?replicaSet=rs0&authSource=admin
+      PORT: 5000
+    networks:
+      - nosqllab13_default
+
+networks:
+  nosqllab13_default:
+    external: true

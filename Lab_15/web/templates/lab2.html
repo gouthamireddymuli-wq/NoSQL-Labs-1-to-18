@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+{% block title %}Activity 2: Tenant Migration Studio{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Activity 2</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold fs-3 mb-0">
+            <i class="fa-solid fa-arrow-right-arrow-left text-primary me-2"></i>
+            Activity 2: Data Migration Between Tenant Isolation Strategies
+        </h2>
+        <p class="text-muted small mb-0">Moving from Shared-Collection to Dedicated Database &bull; Dry-Run &bull; Idempotency Proof &bull; Cryptographic Verification &bull; Safe Rollback</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <label class="small fw-bold text-muted text-nowrap"><i class="fa-solid fa-user me-1"></i> Tenant to Migrate:</label>
+        <select id="migTenantSelect" class="form-select form-select-sm fw-bold border-primary" style="width: 170px;" onchange="refreshDataView()">
+            <option value="tenant-acme" selected>tenant-acme</option>
+            <option value="tenant-globex">tenant-globex</option>
+        </select>
+        <button class="btn btn-outline-secondary btn-sm" onclick="seedSharedData()"><i class="fa-solid fa-seedling me-1"></i> Re-seed Baseline</button>
+    </div>
+</div>
+
+<!-- Workflow Stepper / Action Toolbar -->
+<div class="card card-custom p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="fa-solid fa-bars-progress text-primary me-2"></i> Migration Lifecycle Controls
+        </h5>
+        <span class="badge bg-light text-dark border">
+            Target DB: <strong class="text-primary font-monospace" id="targetDbName">tenant_acme</strong>
+        </span>
+    </div>
+
+    <div class="row g-3">
+        <!-- Step 1: Dry-run -->
+        <div class="col-md-3">
+            <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-warning text-dark me-2">STEP 1</span>
+                        <strong class="small">Dry-Run Inspection</strong>
+                    </div>
+                    <p class="text-muted small mb-3">Inspect documents and destination database without writing data.</p>
+                </div>
+                <button class="btn btn-outline-warning text-dark btn-sm w-100 fw-bold" onclick="runDryRun()">
+                    <i class="fa-solid fa-magnifying-glass me-1"></i> Run Dry-Run (--dry-run)
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Live Migration -->
+        <div class="col-md-3">
+            <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-primary me-2">STEP 2</span>
+                        <strong class="small">Execute Migration</strong>
+                    </div>
+                    <p class="text-muted small mb-3">Copy documents to dedicated DB using idempotent upserts.</p>
+                </div>
+                <button class="btn btn-primary btn-sm w-100 fw-bold" onclick="runLiveMigration()">
+                    <i class="fa-solid fa-play me-1"></i> Run Live Migration
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 3: Idempotency Repeat -->
+        <div class="col-md-3">
+            <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-success me-2">STEP 3</span>
+                        <strong class="small">Verify Idempotency</strong>
+                    </div>
+                    <p class="text-muted small mb-3">Run migration a 2nd time. Proves count does NOT double.</p>
+                </div>
+                <button class="btn btn-success btn-sm w-100 fw-bold" onclick="runIdempotencyTest()">
+                    <i class="fa-solid fa-repeat me-1"></i> Test Idempotency
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: Rollback -->
+        <div class="col-md-3">
+            <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-danger me-2">STEP 4</span>
+                        <strong class="small">Safe Rollback</strong>
+                    </div>
+                    <p class="text-muted small mb-3">Drop dedicated DB; shared data is untouched (zero data loss).</p>
+                </div>
+                <button class="btn btn-outline-danger btn-sm w-100 fw-bold" onclick="runRollback()">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Rollback (--rollback)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Migration Execution Console / Result Banner -->
+<div id="migrationResultBanner" class="mb-4 d-none">
+    <!-- Populated by JavaScript -->
+</div>
+
+<!-- Side-by-Side Data Verification & Checksum Inspector -->
+<div class="row g-4 mb-4">
+    <!-- Left: Source Shared Collection -->
+    <div class="col-lg-6">
+        <div class="card card-custom p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <span class="badge bg-secondary mb-1">SOURCE TIER</span>
+                    <h5 class="fw-bold mb-0">Shared Collection</h5>
+                    <code class="small text-muted">saas_app.tasks (tenant_id scoped)</code>
+                </div>
+                <div class="text-end">
+                    <span class="fs-4 fw-bold text-dark" id="sourceDocCount">0</span>
+                    <div class="small text-muted">documents</div>
+                </div>
+            </div>
+
+            <div class="p-2 bg-light rounded border mb-3 small">
+                <strong>SHA-256 Content Checksum:</strong>
+                <div class="font-monospace text-truncate text-secondary" id="sourceChecksum">Calculating...</div>
+            </div>
+
+            <div class="table-responsive flex-grow-1" style="max-height: 340px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" id="sourceTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Title</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Assignee</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sourceTableBody">
+                        <tr><td colspan="4" class="text-center text-muted py-3">Loading source documents...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Target Dedicated Database -->
+    <div class="col-lg-6">
+        <div class="card card-custom p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <span class="badge bg-primary mb-1">TARGET TIER</span>
+                    <h5 class="fw-bold mb-0">Dedicated Database</h5>
+                    <code class="small text-primary" id="targetDbCollectionLabel">tenant_acme.tasks</code>
+                </div>
+                <div class="text-end">
+                    <span class="fs-4 fw-bold text-primary" id="targetDocCount">0</span>
+                    <div class="small text-muted">documents</div>
+                </div>
+            </div>
+
+            <div class="p-2 bg-light rounded border mb-3 small">
+                <strong>SHA-256 Content Checksum:</strong>
+                <div class="font-monospace text-truncate text-primary" id="targetChecksum">Not migrated yet</div>
+            </div>
+
+            <div class="table-responsive flex-grow-1" style="max-height: 340px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" id="targetTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Title</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Assignee</th>
+                        </tr>
+                    </thead>
+                    <tbody id="targetTableBody">
+                        <tr><td colspan="4" class="text-center text-muted py-3">No dedicated database found.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deep Dive: Idempotency & Rollback Technical Details -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card card-custom p-4">
+            <h6 class="fw-bold text-dark mb-2">
+                <i class="fa-solid fa-code text-primary me-2"></i> How Migration Idempotency Works
+            </h6>
+            <p class="small text-muted mb-2">
+                If a network blip or worker crash interrupts the migration halfway through, the operator must be able to re-run it safely from the beginning.
+            </p>
+            <div class="code-block p-2 mb-2" style="font-size: 0.8rem;">
+<span class="text-secondary"># Upsert keyed on business identity (NOT random _id)</span>
+target_col.update_one(
+    {"tenant_id": doc["tenant_id"], "title": doc["title"]},
+    {"$set": doc},
+    upsert=True
+)
+            </div>
+            <p class="small text-secondary mb-0">
+                Because <code>upsert=True</code> is keyed on the natural compound key <code>(tenant_id, title)</code>, repeat executions find the document already present and overwrite it in place, keeping the target count constant.
+            </p>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card card-custom p-4">
+            <h6 class="fw-bold text-dark mb-2">
+                <i class="fa-solid fa-life-ring text-danger me-2"></i> Why the Rollback is Safe &amp; Lossless
+            </h6>
+            <p class="small text-muted mb-2">
+                A data migration without a rollback path is a one-way door. The Lab 15.2 protocol follows a non-destructive <strong>Copy-Then-Verify</strong> pattern:
+            </p>
+            <ul class="small text-secondary ps-3 mb-2">
+                <li><code>migrate_tenant()</code> <strong>never deletes</strong> documents from <code>saas_app.tasks</code>.</li>
+                <li>Rollback simply executes <code>client.drop_database("tenant_acme")</code>.</li>
+                <li>Because the shared collection was never modified, dropping the copy returns the system to the exact baseline state with 0% risk of data loss.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentMigTenant = "tenant-acme";
+
+function getTargetDb(tenant) {
+    return "tenant_" + tenant.replace("tenant-", "").replace("-", "_");
+}
+
+async function refreshDataView() {
+    currentMigTenant = document.getElementById("migTenantSelect").value;
+    const targetDb = getTargetDb(currentMigTenant);
+    document.getElementById("targetDbName").textContent = targetDb;
+    document.getElementById("targetDbCollectionLabel").textContent = `${targetDb}.tasks`;
+
+    try {
+        const res = await fetch(`/api/migration/data-view?tenant_id=${encodeURIComponent(currentMigTenant)}`);
+        const data = await res.json();
+
+        // Source data
+        const sDocs = data.shared_collection.documents || [];
+        document.getElementById("sourceDocCount").textContent = sDocs.length;
+        document.getElementById("sourceChecksum").textContent = data.shared_collection.checksum;
+        document.getElementById("sourceTableBody").innerHTML = sDocs.length ? sDocs.map(d => `
+            <tr>
+                <td><strong>${escapeHtml(d.title)}</strong></td>
+                <td><span class="badge bg-light text-dark border">${d.priority || 'medium'}</span></td>
+                <td><span class="badge bg-secondary">${d.status || 'open'}</span></td>
+                <td><span class="small">${escapeHtml(d.assignee || 'None')}</span></td>
+            </tr>
+        `).join('') : `<tr><td colspan="4" class="text-center text-muted py-3">No source documents.</td></tr>`;
+
+        // Target data
+        const dDocs = data.dedicated_database.documents || [];
+        document.getElementById("targetDocCount").textContent = dDocs.length;
+        document.getElementById("targetChecksum").textContent = data.dedicated_database.checksum;
+        document.getElementById("targetTableBody").innerHTML = dDocs.length ? dDocs.map(d => `
+            <tr>
+                <td><strong class="text-primary">${escapeHtml(d.title)}</strong></td>
+                <td><span class="badge bg-light text-dark border">${d.priority || 'medium'}</span></td>
+                <td><span class="badge bg-success">${d.status || 'open'}</span></td>
+                <td><span class="small">${escapeHtml(d.assignee || 'None')}</span></td>
+            </tr>
+        `).join('') : `<tr><td colspan="4" class="text-center text-muted py-3">${data.dedicated_database.exists ? 'Database exists but collection is empty.' : 'Dedicated database does not exist yet. Run migration to create it.'}</td></tr>`;
+
+    } catch (e) {
+        console.error("Error refreshing data view:", e);
+    }
+}
+
+async function runDryRun() {
+    const banner = document.getElementById("migrationResultBanner");
+    banner.classList.remove("d-none");
+    banner.innerHTML = `<div class="p-3 bg-warning-subtle border border-warning rounded-3"><i class="fa-solid fa-spinner fa-spin me-2"></i> Simulating dry-run migration...</div>`;
+
+    try {
+        const res = await fetch("/api/migration/dry-run", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({tenant_id: currentMigTenant})
+        });
+        const data = await res.json();
+
+        banner.innerHTML = `
+            <div class="card card-custom p-4 border-warning">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-warning text-dark fs-6"><i class="fa-solid fa-flag me-1"></i> DRY-RUN REPORT</span>
+                    <span class="font-monospace text-muted small">status: ${data.status}</span>
+                </div>
+                <h6 class="fw-bold mb-1">Dry Run Execution for ${escapeHtml(data.tenant_id)}</h6>
+                <p class="small text-muted mb-2">${escapeHtml(data.message)}</p>
+                <div class="row g-2 small border-top pt-2">
+                    <div class="col-md-4"><strong>Target Database:</strong> <code class="text-primary">${data.target_db}</code></div>
+                    <div class="col-md-4"><strong>Documents Identified:</strong> <span class="badge bg-dark">${data.would_move}</span></div>
+                    <div class="col-md-4"><strong>Writes to Target:</strong> <span class="badge bg-success">0 (Dry-Run Safe)</span></div>
+                </div>
+            </div>
+        `;
+        refreshDataView();
+    } catch (e) {
+        banner.innerHTML = `<div class="alert alert-danger">Dry run failed: ${e.message}</div>`;
+    }
+}
+
+async function runLiveMigration() {
+    const banner = document.getElementById("migrationResultBanner");
+    banner.classList.remove("d-none");
+    banner.innerHTML = `<div class="p-3 bg-primary-subtle border border-primary rounded-3"><i class="fa-solid fa-spinner fa-spin me-2"></i> Executing live migration...</div>`;
+
+    try {
+        const res = await fetch("/api/migration/execute", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({tenant_id: currentMigTenant})
+        });
+        const data = await res.json();
+
+        const badgeClass = data.verified ? "bg-success" : "bg-danger";
+        const icon = data.verified ? "fa-shield-check" : "fa-triangle-exclamation";
+
+        banner.innerHTML = `
+            <div class="card card-custom p-4 border-${data.verified ? 'success' : 'danger'}">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge ${badgeClass} fs-6"><i class="fa-solid ${icon} me-1"></i> ${data.status}</span>
+                    <span class="text-muted small">Verified: <strong>${data.verified}</strong></span>
+                </div>
+                <h6 class="fw-bold mb-1">Live Migration to Dedicated Database Completed</h6>
+                <p class="small text-muted mb-2">${escapeHtml(data.message)}</p>
+                <div class="row g-3 small border-top pt-2">
+                    <div class="col-md-3"><strong>Source Count:</strong> ${data.source_count}</div>
+                    <div class="col-md-3"><strong>Target Count:</strong> ${data.target_count}</div>
+                    <div class="col-md-3"><strong>Target Database:</strong> <code class="text-primary">${data.target_db}</code></div>
+                    <div class="col-md-3"><strong>Checksum Match:</strong> <span class="badge bg-success">MATCH (SHA-256)</span></div>
+                </div>
+            </div>
+        `;
+        refreshDataView();
+    } catch (e) {
+        banner.innerHTML = `<div class="alert alert-danger">Live migration failed: ${e.message}</div>`;
+    }
+}
+
+async function runIdempotencyTest() {
+    const banner = document.getElementById("migrationResultBanner");
+    banner.classList.remove("d-none");
+    banner.innerHTML = `<div class="p-3 bg-success-subtle border border-success rounded-3"><i class="fa-solid fa-spinner fa-spin me-2"></i> Running repeat migration to test idempotency...</div>`;
+
+    try {
+        const res = await fetch("/api/migration/idempotency-test", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({tenant_id: currentMigTenant})
+        });
+        const data = await res.json();
+
+        banner.innerHTML = `
+            <div class="card card-custom p-4 border-success">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-success fs-6"><i class="fa-solid fa-repeat me-1"></i> IDEMPOTENCY CONFIRMED</span>
+                    <span class="text-muted small">Target Count Remained: <strong>${data.run2.target_count}</strong></span>
+                </div>
+                <h6 class="fw-bold mb-1">Repeat Migration Proof</h6>
+                <p class="small text-secondary mb-2">${escapeHtml(data.conclusion)}</p>
+                <div class="row g-2 small border-top pt-2">
+                    <div class="col-md-6">
+                        <strong>Run 1 (Initial Migration):</strong><br>
+                        Target Count = ${data.run1.target_count} &bull; Checksum = <span class="font-monospace text-truncate">${data.run1.target_checksum.substring(0, 16)}...</span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Run 2 (Repeat Migration):</strong><br>
+                        Target Count = ${data.run2.target_count} &bull; Checksum = <span class="font-monospace text-truncate">${data.run2.target_checksum.substring(0, 16)}...</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        refreshDataView();
+    } catch (e) {
+        banner.innerHTML = `<div class="alert alert-danger">Idempotency test failed: ${e.message}</div>`;
+    }
+}
+
+async function runRollback() {
+    if (!confirm(`Are you sure you want to rollback migration for ${currentMigTenant}? This drops dedicated database ${getTargetDb(currentMigTenant)}.`)) return;
+
+    const banner = document.getElementById("migrationResultBanner");
+    banner.classList.remove("d-none");
+    banner.innerHTML = `<div class="p-3 bg-danger-subtle border border-danger rounded-3"><i class="fa-solid fa-spinner fa-spin me-2"></i> Executing rollback...</div>`;
+
+    try {
+        const res = await fetch("/api/migration/rollback", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({tenant_id: currentMigTenant})
+        });
+        const data = await res.json();
+
+        banner.innerHTML = `
+            <div class="card card-custom p-4 border-danger">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-danger fs-6"><i class="fa-solid fa-rotate-left me-1"></i> ROLLED BACK</span>
+                    <span class="text-muted small font-monospace">${data.target_db}</span>
+                </div>
+                <h6 class="fw-bold mb-1">Rollback Completed Safely</h6>
+                <p class="small text-muted mb-0">${escapeHtml(data.message)}</p>
+            </div>
+        `;
+        refreshDataView();
+    } catch (e) {
+        banner.innerHTML = `<div class="alert alert-danger">Rollback failed: ${e.message}</div>`;
+    }
+}
+
+async function seedSharedData() {
+    try {
+        const res = await fetch("/api/migration/seed", {method: "POST"});
+        const d = await res.json();
+        alert(d.message);
+        refreshDataView();
+    } catch (e) {
+        alert(e.message);
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    refreshDataView();
+});
+</script>
+{% endblock %}

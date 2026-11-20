@@ -1,0 +1,54 @@
+[
+  {
+    "_id": {
+      "$oid": "6af986ed3c608aede87705fd"
+    },
+    "title": "Quantum Computing & Neuromorphic AI Breakthroughs 2026",
+    "author": "Dr. Priya Sharma",
+    "content": "Exploring topological qubits, scalable error correction, and quantum supremacy...",
+    "views": 250000,
+    "comment_count": 1000,
+    "recent_comments": [
+      {
+        "author": "Researcher_46",
+        "text": "Crucial observation #996: What are the cryogenic cooling requirements for this architecture?",
+        "likes": 72,
+        "created_at": {
+          "$date": "2026-11-15T10:34:57.536Z"
+        }
+      },
+      {
+        "author": "Researcher_47",
+        "text": "Crucial observation #997: What are the cryogenic cooling requirements for this architecture?",
+        "likes": 79,
+        "created_at": {
+          "$date": "2026-11-15T10:34:58.536Z"
+        }
+      },
+      {
+        "author": "Researcher_48",
+        "text": "Crucial observation #998: What are the cryogenic cooling requirements for this architecture?",
+        "likes": 86,
+        "created_at": {
+          "$date": "2026-11-15T10:34:59.536Z"
+        }
+      },
+      {
+        "author": "Researcher_49",
+        "text": "Crucial observation #999: What are the cryogenic cooling requirements for this architecture?",
+        "likes": 93,
+        "created_at": {
+          "$date": "2026-11-15T10:35:00.536Z"
+        }
+      },
+      {
+        "author": "Researcher_0",
+        "text": "Crucial observation #1000: What are the cryogenic cooling requirements for this architecture?",
+        "likes": 0,
+        "created_at": {
+          "$date": "2026-11-15T10:35:01.536Z"
+        }
+      }
+    ]
+  }
+]

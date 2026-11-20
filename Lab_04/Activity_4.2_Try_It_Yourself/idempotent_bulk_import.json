@@ -1,0 +1,199 @@
+[
+  {
+    "_id": {
+      "$oid": "6af99fe82c24608749712841"
+    },
+    "sku": "SKU-101",
+    "category": "Displays",
+    "created_at": {
+      "$date": "2026-11-15T12:04:56.277Z"
+    },
+    "name": "4K Ultra-Wide Monitor (V2)",
+    "price": 479.99,
+    "stock": 40,
+    "tags": [
+      "4K",
+      "monitor",
+      "productivity",
+      "hdr"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe82c24608749712842"
+    },
+    "sku": "SKU-102",
+    "category": "Keyboards",
+    "created_at": {
+      "$date": "2026-11-15T12:04:56.277Z"
+    },
+    "name": "Mechanical Tenkeyless Keyboard",
+    "price": 99.99,
+    "stock": 55,
+    "tags": [
+      "mechanical",
+      "tkl",
+      "rgb"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe82c24608749712843"
+    },
+    "sku": "SKU-103",
+    "category": "Mice",
+    "created_at": {
+      "$date": "2026-11-15T12:04:56.277Z"
+    },
+    "name": "Ergonomic Vertical Mouse",
+    "price": 54.99,
+    "stock": 75,
+    "tags": [
+      "ergonomic",
+      "wireless"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe82c24608749712844"
+    },
+    "sku": "SKU-104",
+    "category": "Audio",
+    "created_at": {
+      "$date": "2026-11-15T12:04:56.277Z"
+    },
+    "name": "Studio Condenser Microphone",
+    "price": 119.99,
+    "stock": 30,
+    "tags": [
+      "audio",
+      "studio",
+      "usb"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe82c24608749712845"
+    },
+    "sku": "SKU-105",
+    "category": "Accessories",
+    "created_at": {
+      "$date": "2026-11-15T12:04:56.277Z"
+    },
+    "name": "Wireless Charging Pad 15W",
+    "price": 21.99,
+    "stock": 150,
+    "tags": [
+      "charging",
+      "wireless",
+      "fast"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe82c24608749712846"
+    },
+    "sku": "SKU-106",
+    "category": "Accessories",
+    "created_at": {
+      "$date": "2026-11-15T12:04:56.277Z"
+    },
+    "name": "Thunderbolt 4 Docking Station",
+    "price": 219.99,
+    "stock": 18,
+    "tags": [
+      "thunderbolt",
+      "dock",
+      "usb-c"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe82c24608749712847"
+    },
+    "sku": "SKU-107",
+    "category": "Audio",
+    "created_at": {
+      "$date": "2026-11-15T12:04:56.277Z"
+    },
+    "name": "Active Noise Cancelling Earbuds",
+    "price": 149.99,
+    "stock": 35,
+    "tags": [
+      "anc",
+      "wireless",
+      "earbuds"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe82c24608749712848"
+    },
+    "sku": "SKU-108",
+    "category": "Lighting",
+    "created_at": {
+      "$date": "2026-11-15T12:04:56.277Z"
+    },
+    "name": "Smart Ambient Light Bar",
+    "price": 69.99,
+    "stock": 50,
+    "tags": [
+      "smart-light",
+      "rgb",
+      "desk"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe82c24608749712849"
+    },
+    "sku": "SKU-109",
+    "category": "Mounts",
+    "created_at": {
+      "$date": "2026-11-15T12:04:56.304Z"
+    },
+    "name": "Dual Monitor Arm Mount",
+    "price": 79.99,
+    "stock": 28,
+    "tags": [
+      "desk-mount",
+      "ergonomic",
+      "dual-arm"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe82c2460874971284a"
+    },
+    "sku": "SKU-110",
+    "category": "Cameras",
+    "created_at": {
+      "$date": "2026-11-15T12:04:56.304Z"
+    },
+    "name": "HD 1080p Pro Webcam with Privacy Shutter",
+    "price": 89.99,
+    "stock": 42,
+    "tags": [
+      "webcam",
+      "1080p",
+      "streaming"
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe82c2460874971284b"
+    },
+    "sku": "SKU-111",
+    "category": "Accessories",
+    "created_at": {
+      "$date": "2026-11-15T12:04:56.304Z"
+    },
+    "name": "Braided Cable Management Sleeve",
+    "price": 14.99,
+    "stock": 200,
+    "tags": [
+      "cable-management",
+      "organization"
+    ]
+  }
+]

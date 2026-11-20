@@ -1,0 +1,78 @@
+[
+  {
+    "_id": {
+      "$oid": "6af986e8b5290a74577e4848"
+    },
+    "code": "CS101",
+    "title": "Introduction to Programming & Python",
+    "instructor": "Dr. Ramesh Nair",
+    "credits": 3,
+    "prerequisites": [],
+    "description": "Fundamental programming paradigms, control flow, functions, and data structures."
+  },
+  {
+    "_id": {
+      "$oid": "6af986e8b5290a74577e4849"
+    },
+    "code": "MATH101",
+    "title": "Discrete Mathematics & Linear Algebra",
+    "instructor": "Dr. Sunita Rao",
+    "credits": 4,
+    "prerequisites": [],
+    "description": "Vector spaces, matrices, eigenvalues, graph theory, and combinatorics."
+  },
+  {
+    "_id": {
+      "$oid": "6af986e8b5290a74577e484a"
+    },
+    "code": "CS201",
+    "title": "Data Structures & Algorithms",
+    "instructor": "Dr. Anil Gupta",
+    "credits": 4,
+    "prerequisites": [
+      "CS101"
+    ],
+    "description": "Trees, heaps, graphs, hashing, sorting, dynamic programming, and complexity."
+  },
+  {
+    "_id": {
+      "$oid": "6af986e8b5290a74577e484b"
+    },
+    "code": "CS301",
+    "title": "Database Management Systems",
+    "instructor": "Dr. Priya Sharma",
+    "credits": 4,
+    "prerequisites": [
+      "CS201"
+    ],
+    "description": "Relational algebra, normalization, transaction management, indexing, and NoSQL."
+  },
+  {
+    "_id": {
+      "$oid": "6af986e8b5290a74577e484c"
+    },
+    "code": "CS401",
+    "title": "Advanced Machine Learning",
+    "instructor": "Dr. Anil Gupta",
+    "credits": 4,
+    "prerequisites": [
+      "CS201",
+      "MATH101"
+    ],
+    "description": "Supervised, unsupervised, deep neural networks, attention mechanisms, and optimization."
+  },
+  {
+    "_id": {
+      "$oid": "6af986e8b5290a74577e484d"
+    },
+    "code": "CS402",
+    "title": "Distributed Cloud Systems",
+    "instructor": "Dr. Meera Joshi",
+    "credits": 4,
+    "prerequisites": [
+      "CS201",
+      "CS301"
+    ],
+    "description": "Consensus protocols, Paxos/Raft, distributed storage, replication, and CAP theorem."
+  }
+]

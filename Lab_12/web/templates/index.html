@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoSQL Lab 12 - Security, RBAC & TLS Encryption</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #00684a;
+            --primary-dark: #004d37;
+            --accent-blue: #0969da;
+            --bg-light: #f8fafc;
+        }
+        body {
+            background-color: var(--bg-light);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #1f2328;
+        }
+        .navbar-custom {
+            background: linear-gradient(135deg, #00684a 0%, #004d37 100%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        .hero-banner {
+            background: linear-gradient(135deg, #0b1f22 0%, #004d37 100%);
+            color: white;
+            padding: 2.5rem 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 104, 74, 0.2);
+        }
+        .card-custom {
+            border: none;
+            border-radius: 0.85rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: #ffffff;
+        }
+        .card-custom:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .badge-security {
+            background-color: #e6f7ef;
+            color: #00684a;
+            border: 1px solid #a3e3c6;
+            font-weight: 600;
+        }
+        .threat-img-container {
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 2px solid #e1e4e8;
+            background: #fff;
+            padding: 0.75rem;
+            text-align: center;
+        }
+        .threat-img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .threat-img:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" href="/">
+            <i class="fa-solid fa-shield-halved me-2"></i> MongoDB Security Lab 12
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navContent">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+                <li class="nav-item me-2">
+                    <a class="nav-link active" href="/"><i class="fa-solid fa-house me-1"></i> Overview</a>
+                </li>
+                <li class="nav-item me-2">
+                    <a class="nav-link" href="/lab1"><i class="fa-solid fa-user-lock me-1"></i> Lab 12.1: RBAC & Redaction</a>
+                </li>
+                <li class="nav-item me-2">
+                    <a class="nav-link" href="/lab2"><i class="fa-solid fa-key me-1"></i> Lab 12.2: TLS & Certificates</a>
+                </li>
+                <li class="nav-item me-2">
+                    <a class="btn btn-outline-light btn-sm rounded-pill px-3" href="https://hub.docker.com/r/gouthudocker/nosql-lab12" target="_blank">
+                        <i class="fa-brands fa-docker me-1"></i> Docker Hub
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Container -->
+<div class="container-fluid px-4 py-4">
+
+    <!-- Hero Banner -->
+    <div class="hero-banner">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="badge badge-security px-3 py-2 mb-2 text-uppercase letter-spacing-1">
+                    <i class="fa-solid fa-graduation-cap me-1"></i> Chapter 12 Laboratory Submission
+                </span>
+                <h1 class="display-6 fw-bold mt-2">MongoDB Enterprise Security Architecture</h1>
+                <p class="lead mb-3 text-light opacity-90">
+                    Implementation of Role-Based Access Control (RBAC), Field-Level Redaction Views, OpenSSL X.509 PKI Certificate Authority, and TLS Encryption-in-Transit.
+                </p>
+                <div class="d-flex flex-wrap gap-2 text-white-50 small">
+                    <div><strong class="text-white">Student:</strong> M Gouthami (24BTRCL130)</div>
+                    <div><span class="mx-2">•</span><strong class="text-white">Course:</strong> NoSQL Databases (AIML-B)</div>
+                    <div><span class="mx-2">•</span><strong class="text-white">DB Engine:</strong> MongoDB 7.0 (WiredTiger)</div>
+                    <div><span class="mx-2">•</span><strong class="text-white">Status:</strong> <span class="badge bg-success"><i class="fa-solid fa-circle-check"></i> {{ mongo_status }}</span></div>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center text-lg-end mt-4 mt-lg-0">
+                <a href="/lab1" class="btn btn-success btn-lg px-4 me-2 shadow-sm">
+                    <i class="fa-solid fa-play me-2"></i> RBAC Lab 12.1
+                </a>
+                <a href="/lab2" class="btn btn-outline-light btn-lg px-4 shadow-sm">
+                    <i class="fa-solid fa-lock me-2"></i> TLS Lab 12.2
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- CIA Triad & Threat Model Section -->
+    <div class="row g-4 mb-4">
+        <!-- CIA Triad Cards -->
+        <div class="col-lg-4">
+            <div class="card card-custom h-100 p-4 border-start border-4 border-success">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success-subtle p-3 rounded-circle me-3 text-success">
+                        <i class="fa-solid fa-eye-slash fa-2x"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Confidentiality</h5>
+                        <small class="text-muted">Data in Transit & at Rest</small>
+                    </div>
+                </div>
+                <p class="text-muted small">
+                    Enforced via <strong>TLS 1.3 / mTLS</strong> encryption with an internal PKI Certificate Authority. Sensitive PII such as employee salaries and SSNs are protected via <strong>MongoDB Views ($project with $$REMOVE)</strong>.
+                </p>
+                <div class="mt-auto pt-2">
+                    <span class="badge bg-light text-dark border me-1"><i class="fa-solid fa-check text-success"></i> TLS requireTLS</span>
+                    <span class="badge bg-light text-dark border"><i class="fa-solid fa-check text-success"></i> Field Redaction</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card card-custom h-100 p-4 border-start border-4 border-primary">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary-subtle p-3 rounded-circle me-3 text-primary">
+                        <i class="fa-solid fa-user-shield fa-2x"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Integrity</h5>
+                        <small class="text-muted">Role-Based Access Control</small>
+                    </div>
+                </div>
+                <p class="text-muted small">
+                    Enforced via MongoDB <strong>Least-Privilege RBAC</strong>. Application services are restricted to specific collection actions (e.g. <code>limitedWriter</code> on logs, <code>analyticsReader</code> on analytics) to prevent tampering.
+                </p>
+                <div class="mt-auto pt-2">
+                    <span class="badge bg-light text-dark border me-1"><i class="fa-solid fa-check text-primary"></i> mongod --auth</span>
+                    <span class="badge bg-light text-dark border"><i class="fa-solid fa-check text-primary"></i> Custom Roles</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card card-custom h-100 p-4 border-start border-4 border-warning">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-warning-subtle p-3 rounded-circle me-3 text-warning">
+                        <i class="fa-solid fa-network-wired fa-2x"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Availability & Auditing</h5>
+                        <small class="text-muted">Resilience & Diagnostics</small>
+                    </div>
+                </div>
+                <p class="text-muted small">
+                    Guaranteed through containerized deployment, automated certificate expiry lifecycle tracking, cluster health checks, and connection rejection audits for unauthenticated probes.
+                </p>
+                <div class="mt-auto pt-2">
+                    <span class="badge bg-light text-dark border me-1"><i class="fa-solid fa-check text-warning"></i> Docker Compose</span>
+                    <span class="badge bg-light text-dark border"><i class="fa-solid fa-check text-warning"></i> Audit Logging</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Threat Modeling Visual & Architecture -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card card-custom h-100 p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fa-solid fa-diagram-project text-success me-2"></i> MongoDB Threat Model & Attack Vectors
+                    </h5>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1">
+                        STRIDE Model Analysis
+                    </span>
+                </div>
+                <p class="text-muted small mb-3">
+                    The diagram below maps out threats addressed in this lab: eavesdropping on network traffic (mitigated by TLS in Lab 12.2), unauthorized database modifications (mitigated by RBAC in Lab 12.1), and unauthorized employee data leakage (mitigated by field redaction views in Activity 12.1).
+                </p>
+                <div class="threat-img-container">
+                    <img src="/static/img/Threat_Modelling.jpg" alt="MongoDB Threat Modelling" class="threat-img" data-bs-toggle="modal" data-bs-target="#imgModal">
+                    <small class="d-block text-muted mt-2"><i class="fa-solid fa-magnifying-glass-plus"></i> Click image to view in high resolution</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card card-custom h-100 p-4">
+                <h5 class="fw-bold mb-3 text-dark">
+                    <i class="fa-solid fa-list-check text-primary me-2"></i> Completed Laboratory Deliverables
+                </h5>
+
+                <div class="list-group list-group-flush small">
+                    <div class="list-group-item px-0 py-2 border-0">
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-circle-check text-success me-2 fa-lg"></i>
+                            <div>
+                                <strong>Lab 12.1: Authentication & Custom RBAC</strong>
+                                <div class="text-muted">Enabled <code>--auth</code>, configured <code>analyticsReader</code> and <code>limitedWriter</code>, created application users.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0 py-2 border-0">
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-circle-check text-success me-2 fa-lg"></i>
+                            <div>
+                                <strong>Activity 12.1: Field-Level Redaction Views</strong>
+                                <div class="text-muted">Constructed <code>employees_safe</code> view removing <code>salary</code> via <code>$$REMOVE</code> and masking SSN for non-HR roles.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0 py-2 border-0">
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-circle-check text-success me-2 fa-lg"></i>
+                            <div>
+                                <strong>Lab 12.2: TLS / Encryption-in-Transit</strong>
+                                <div class="text-muted">Generated 4096-bit CA, server certificate with SAN (localhost, 127.0.0.1, mongo), and client PEM.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0 py-2 border-0">
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-circle-check text-success me-2 fa-lg"></i>
+                            <div>
+                                <strong>Automated PKI Management Script</strong>
+                                <div class="text-muted">Developed <code>generate_tls_certs.py</code> using Python <code>cryptography</code> library for zero-touch pipeline deployment.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0 py-2 border-0">
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-circle-check text-success me-2 fa-lg"></i>
+                            <div>
+                                <strong>Docker Hub Containerized Demonstration</strong>
+                                <div class="text-muted">Containerized full platform with Dockerfile and Docker Compose, pushed to <code>gouthudocker/nosql-lab12</code>.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 bg-light rounded border">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small d-block">Docker Hub Repository:</span>
+                            <code class="fw-bold text-primary">gouthudocker/nosql-lab12:latest</code>
+                        </div>
+                        <a href="https://hub.docker.com/r/gouthudocker/nosql-lab12" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="fa-brands fa-docker me-1"></i> View Hub
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imgModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-shield me-2"></i> MongoDB Threat Model Diagram</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-3">
+                <img src="/static/img/Threat_Modelling.jpg" class="img-fluid rounded" alt="Threat Model Large">
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="text-center py-4 text-muted small border-top bg-white mt-5">
+    <div class="container">
+        <p class="mb-1"><strong>NoSQL Databases Chapter 12 Laboratory Submission</strong> • Security, RBAC & TLS Encryption</p>
+        <p class="mb-0">Candidate: <strong>M Gouthami</strong> (Reg: <code>24BTRCL130</code>) | Docker Image: <code>gouthudocker/nosql-lab12:latest</code></p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NoSQL Lab 10 – MongoDB Transactions</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+<style>
+  :root{--mg:#00684A;--mg-light:#00ED64;}
+  body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',system-ui,sans-serif;}
+  .navbar{background:#00684A!important;}
+  .card{background:#161b22;border:1px solid #30363d;}
+  .card-header{background:#1f2937;border-bottom:1px solid #30363d;}
+  .hero{background:linear-gradient(135deg,#00684A 0%,#001e2b 100%);padding:80px 0;}
+  .lab-card{transition:transform .2s,box-shadow .2s;}
+  .lab-card:hover{transform:translateY(-6px);box-shadow:0 12px 40px rgba(0,237,100,.2);}
+  .badge-mongo{background:#00ED64;color:#001e2b;font-weight:700;}
+  .tech-pill{display:inline-block;background:#1f2937;border:1px solid #30363d;border-radius:999px;padding:4px 14px;font-size:.78rem;margin:3px;}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-dark navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/"><i class="bi bi-database-fill-lock me-2"></i>NoSQL Lab 10</a>
+    <div class="navbar-nav ms-auto">
+      <a class="nav-link" href="/lab1"><i class="bi bi-bank me-1"></i>Lab 10.1</a>
+      <a class="nav-link" href="/lab2"><i class="bi bi-box-seam me-1"></i>Lab 10.2</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero text-center text-white">
+  <div class="container">
+    <h1 class="display-4 fw-bold mb-3"><i class="bi bi-database-fill-lock me-3"></i>MongoDB Transactions</h1>
+    <p class="lead mb-4">Multi-document ACID transactions · Replica Set · Retry Logic · Concurrency Control</p>
+    <span class="badge badge-mongo fs-6 px-4 py-2">Chapter 10 Labs</span>
+  </div>
+</section>
+
+<div class="container my-5">
+  <div class="row g-4 justify-content-center">
+
+    <div class="col-md-5">
+      <div class="card lab-card h-100">
+        <div class="card-header py-3">
+          <h5 class="mb-0"><i class="bi bi-bank2 me-2 text-success"></i>Lab 10.1 – Bank Transfer</h5>
+        </div>
+        <div class="card-body">
+          <p class="text-secondary">Implements multi-document ACID bank transfers with session-scoped transactions, automatic rollback on insufficient funds, and exponential-backoff retry on TransientTransactionError.</p>
+          <div class="mb-3">
+            <span class="tech-pill">PyMongo Sessions</span>
+            <span class="tech-pill">start_transaction()</span>
+            <span class="tech-pill">WriteConcern majority</span>
+            <span class="tech-pill">Exponential Backoff</span>
+          </div>
+          <ul class="list-unstyled text-secondary small">
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Debit + Credit + Audit in one atomic transaction</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Insufficient funds → automatic rollback</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Up to 5 retries with 2ⁿ back-off + jitter</li>
+          </ul>
+        </div>
+        <div class="card-footer">
+          <a href="/lab1" class="btn btn-success w-100"><i class="bi bi-arrow-right-circle me-2"></i>Open Lab 10.1</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-5">
+      <div class="card lab-card h-100">
+        <div class="card-header py-3">
+          <h5 class="mb-0"><i class="bi bi-box-seam me-2 text-warning"></i>Lab 10.2 – Inventory Reservation</h5>
+        </div>
+        <div class="card-body">
+          <p class="text-secondary">E-commerce inventory system using transactions across two collections. Handles write conflicts from concurrent reservations using retry logic and optimistic concurrency control via version fields.</p>
+          <div class="mb-3">
+            <span class="tech-pill">Multi-collection Txn</span>
+            <span class="tech-pill">WriteConflict Retry</span>
+            <span class="tech-pill">ThreadPoolExecutor</span>
+            <span class="tech-pill">Throughput Sweep</span>
+          </div>
+          <ul class="list-unstyled text-secondary small">
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Inventory + Orders transactionally coupled</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Concurrent threads with conflict detection</li>
+            <li><i class="bi bi-check-circle-fill text-success me-2"></i>Live throughput measurement (TPS)</li>
+          </ul>
+        </div>
+        <div class="card-footer">
+          <a href="/lab2" class="btn btn-warning w-100 text-dark"><i class="bi bi-arrow-right-circle me-2"></i>Open Lab 10.2</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tech overview -->
+  <div class="card mt-5">
+    <div class="card-header"><h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Architecture Overview</h6></div>
+    <div class="card-body row g-4 text-center text-secondary small">
+      <div class="col-6 col-md-3">
+        <i class="bi bi-server fs-2 text-success d-block mb-2"></i>
+        <strong>MongoDB 7</strong><br/>WiredTiger · Replica Set rs0
+      </div>
+      <div class="col-6 col-md-3">
+        <i class="bi bi-arrow-left-right fs-2 text-primary d-block mb-2"></i>
+        <strong>ACID Transactions</strong><br/>snapshot isolation · majority write
+      </div>
+      <div class="col-6 col-md-3">
+        <i class="bi bi-arrow-repeat fs-2 text-warning d-block mb-2"></i>
+        <strong>Retry Logic</strong><br/>TransientTransactionError · 2ⁿ back-off
+      </div>
+      <div class="col-6 col-md-3">
+        <i class="bi bi-flask fs-2 text-info d-block mb-2"></i>
+        <strong>Flask + PyMongo</strong><br/>REST API · live dashboard
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="text-center text-secondary py-4 small border-top" style="border-color:#30363d!important">
+  NoSQL Lab 10 · MongoDB Multi-Document Transactions · Docker Containerised
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

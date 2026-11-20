@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Activity 2 - Kubernetes StatefulSet for MongoDB{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">
+            <i class="fa-solid fa-dharmachakra text-primary me-2"></i> Activity 2: Kubernetes StatefulSet for MongoDB
+        </h2>
+        <p class="text-muted mb-0">Declarative Cloud-Native Orchestration with Headless Services & Storage Isolation</p>
+    </div>
+    <span class="badge badge-k8s px-3 py-2 fs-6">
+        <i class="fa-solid fa-cube me-1"></i> StatefulSet (apps/v1)
+    </span>
+</div>
+
+<!-- Architectural Deep Dive: Three Core Pillars -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="card card-custom h-100 p-3">
+            <div class="text-primary mb-2">
+                <i class="fa-solid fa-ban fa-2x text-danger"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Why Deployments Fail for MongoDB</h5>
+            <p class="small text-muted mb-0">
+                A plain Kubernetes <code>Deployment</code> treats pods as completely interchangeable cattle. When a pod restarts, it receives a new, random hostname and IP. In a MongoDB replica set, member identities are permanently baked into <code>rs.status()</code>. Pod churn destroys the topology.
+            </p>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-custom h-100 p-3">
+            <div class="text-primary mb-2">
+                <i class="fa-solid fa-route fa-2x text-primary"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Headless Service & CoreDNS</h5>
+            <p class="small text-muted mb-0">
+                Configuring <code>clusterIP: None</code> creates a <strong>Headless Service</strong>. Kubernetes bypasses proxy load-balancing and directly registers stable DNS A-records: <code>mongo-0.mongo.nosql-labs.svc.cluster.local</code>. Each pod is uniquely and directly addressable.
+            </p>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-custom h-100 p-3">
+            <div class="text-primary mb-2">
+                <i class="fa-solid fa-hard-drive fa-2x text-success"></i>
+            </div>
+            <h5 class="fw-bold mb-2">volumeClaimTemplates Isolation</h5>
+            <p class="small text-muted mb-0">
+                Instead of a single shared volume, <code>volumeClaimTemplates</code> dynamically provisions an independent PersistentVolumeClaim per pod (<code>mongo-data-mongo-0</code>, <code>mongo-data-mongo-1</code>). When rescheduled to another physical worker node, the pod reconnects to its exact disk.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Task Prediction Question & Verified Answer Box -->
+<div class="card card-custom mb-4 border-warning">
+    <div class="card-header bg-warning bg-opacity-10 border-0 pt-3">
+        <h5 class="fw-bold text-dark mb-0">
+            <i class="fa-solid fa-clipboard-question text-warning me-2"></i> Lab Activity Question & Architectural Prediction
+        </h5>
+        <small class="text-muted">Prediction required before inspecting <code>02-statefulset.yaml</code>:</small>
+    </div>
+    <div class="card-body">
+        <div class="p-3 bg-light rounded-3 mb-3 border">
+            <h6 class="fw-bold text-primary mb-2">
+                <i class="fa-solid fa-circle-question me-1"></i> Question:
+            </h6>
+            <p class="small mb-0 text-muted fst-italic">
+                "Predict what <code>serviceName</code> field the StatefulSet needs to reference for stable pod-naming to work, and what would break if it referenced the wrong Service (or none at all)?"
+            </p>
+        </div>
+
+        <div class="p-3 rounded-3 border-start border-4 border-success bg-white shadow-sm">
+            <h6 class="fw-bold text-success mb-2">
+                <i class="fa-solid fa-circle-check me-1"></i> Verified Technical Answer:
+            </h6>
+            <ul class="small text-muted mb-0 ps-3">
+                <li class="mb-2">
+                    <strong>Required Reference:</strong> The StatefulSet spec must specify <code>serviceName: mongo</code>, which matches the exact name of the headless Service declared in <code>01-headless-service.yaml</code>.
+                </li>
+                <li class="mb-2">
+                    <strong>What Breaks if Missing or Wrong:</strong> CoreDNS relies on <code>spec.serviceName</code> to register predictable DNS A-records (<code>mongo-0.mongo.nosql-labs.svc.cluster.local</code>) for each ordinal pod. If missing or misconfigured, no per-pod DNS records are created.
+                </li>
+                <li class="mb-2">
+                    <strong>Consequence on MongoDB Cluster:</strong> Pods cannot discover each other by DNS name. The one-shot initialization Job (<code>03-replicaset-init-job.yaml</code>) calling <code>rs.initiate()</code> fails with host resolution errors. Inter-node heartbeats fail, preventing primary elections and rendering the replica set completely non-functional.
+                </li>
+                <li>
+                    <strong>What if a standard (non-headless) service is used?</strong> Traffic sent to <code>mongo</code> would round-robin across pods instead of reaching the specific replica set member, causing corrupt quorum handshakes and replication failures.
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Manifests Explorer Tabs -->
+<div class="card card-custom">
+    <div class="card-header bg-white border-0 pt-3 pb-0">
+        <h5 class="fw-bold mb-3">
+            <i class="fa-solid fa-file-code text-secondary me-2"></i> Generated Kubernetes Manifests Viewer
+        </h5>
+        <ul class="nav nav-tabs card-header-tabs" id="manifestTabs" role="tablist">
+            {% for fname, content in manifests.items() %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if loop.first %}active{% endif %}" id="tab-{{ loop.index }}" data-bs-toggle="tab" data-bs-target="#content-{{ loop.index }}" type="button" role="tab">
+                    <i class="fa-regular fa-file-lines me-1"></i> {{ fname }}
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content" id="manifestTabsContent">
+            {% for fname, content in manifests.items() %}
+            <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="content-{{ loop.index }}" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-muted fw-bold">File: <code>k8s/{{ fname }}</code></small>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="copyManifest('code-{{ loop.index }}')">
+                        <i class="fa-regular fa-copy me-1"></i> Copy YAML
+                    </button>
+                </div>
+                <pre class="code-block" id="code-{{ loop.index }}"><code>{{ content }}</code></pre>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyManifest(elementId) {
+    const text = document.getElementById(elementId).innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        alert('YAML manifest copied to clipboard!');
+    });
+}
+</script>
+{% endblock %}

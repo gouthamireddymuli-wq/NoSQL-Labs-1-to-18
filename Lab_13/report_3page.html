@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>NoSQL Lab 13: Production Deployment, Kubernetes StatefulSets & Cloud Provisioning</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1f2328;
+    background: #ffffff;
+    font-size: 7.8pt;
+    line-height: 1.32;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .page {
+    page-break-after: always;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .page:last-child {
+    page-break-after: avoid;
+  }
+
+  .content-wrap {
+    flex: 1;
+  }
+
+  /* Header */
+  .top-bar {
+    border-bottom: 2px solid #00684a;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .top-title {
+    font-size: 13pt;
+    font-weight: 800;
+    color: #00684a;
+    letter-spacing: -0.2px;
+  }
+  .top-sub {
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: #0969da;
+  }
+  .meta-tag {
+    font-size: 7.2pt;
+    color: #57606a;
+    text-align: right;
+  }
+
+  /* Section Styling */
+  .section-title {
+    font-size: 9.2pt;
+    font-weight: 700;
+    color: #00684a;
+    border-left: 3px solid #00684a;
+    padding-left: 5px;
+    margin: 7px 0 3px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .section-title.blue {
+    color: #0969da;
+    border-left-color: #0969da;
+  }
+  .section-title.amber {
+    color: #b05a00;
+    border-left-color: #b05a00;
+  }
+
+  p {
+    margin: 0 0 4px 0;
+  }
+
+  /* Cards / Boxes */
+  .grid-2 {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .grid-3 {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 5px;
+  }
+  .col-half {
+    flex: 1;
+  }
+  .col-third {
+    flex: 1;
+  }
+
+  .box {
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+    padding: 6px 8px;
+    background: #f6f8fa;
+    margin-bottom: 5px;
+  }
+  .box.highlight {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+  .box.blue-bg {
+    background: #f0f7ff;
+    border-color: #bfdbfe;
+  }
+  .box.warn {
+    background: #fffbeb;
+    border-color: #fde68a;
+  }
+
+  .box-title {
+    font-weight: 700;
+    font-size: 8.2pt;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .box-title.green { color: #00684a; }
+  .box-title.blue { color: #0969da; }
+  .box-title.amber { color: #b05a00; }
+
+  /* Code Blocks */
+  pre {
+    background: #0f172a;
+    color: #f8fafc;
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 6.8pt;
+    line-height: 1.25;
+    margin: 0 0 5px 0;
+    overflow-x: hidden;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 7.2pt;
+    background: #ebecf0;
+    padding: 1px 3px;
+    border-radius: 2px;
+    color: #00684a;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4px 0 6px 0;
+    font-size: 7.1pt;
+  }
+  th, td {
+    border: 1px solid #d0d7de;
+    padding: 3px 5px;
+    text-align: left;
+  }
+  th {
+    background: #0f172a;
+    color: #ffffff;
+    font-weight: 600;
+  }
+  tr:nth-child(even) td {
+    background: #f6f8fa;
+  }
+
+  /* Footer */
+  .footer-bar {
+    border-top: 1px solid #d0d7de;
+    padding-top: 3px;
+    margin-top: 5px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 6.8pt;
+    color: #57606a;
+  }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: Executive Overview & Activity 1 Production Replica Set -->
+<div class="page">
+  <div class="content-wrap">
+    <div class="top-bar">
+      <div>
+        <div class="top-title">NoSQL Laboratory Report: Production Deployment & Orchestration</div>
+        <div class="top-sub">Chapter 13: Replica Sets with Keyfile Auth, Kubernetes StatefulSets & Terraform Atlas</div>
+      </div>
+      <div class="meta-tag">
+        <strong>M Gouthami (24BTRCL130)</strong><br/>
+        Docker Hub: <code>gouthudocker/nosql-lab13:latest</code><br/>
+        Platform: <code>http://localhost:5003</code>
+      </div>
+    </div>
+
+    <div class="section-title">1. Executive Architectural Overview & Core Concepts</div>
+    <p>
+      In developmental MongoDB deployments (such as Chapter 8), clusters are commonly initialized without internal membership validation or administrative users. In production enterprise environments, this exposes the infrastructure to rogue node infiltration, data tampering, and unauthorized administrative compromise. Chapter 13 addresses three essential operational tiers:
+    </p>
+    <div class="grid-3">
+      <div class="col-third box highlight">
+        <div class="box-title green">Tier 1: Keyfile Auth (Docker)</div>
+        <p style="font-size:7pt; margin:0;">
+          3-member replica set with 756-byte cryptographic keyfile (chmod 400). Intra-cluster HMAC mutual trust and root admin bootstrapping via the Localhost Exception.
+        </p>
+      </div>
+      <div class="col-third box blue-bg">
+        <div class="box-title blue">Tier 2: Kubernetes StatefulSet</div>
+        <p style="font-size:7pt; margin:0;">
+          Declarative cloud orchestration using a Headless Service (clusterIP: None) for stable CoreDNS addressing and volumeClaimTemplates for per-pod persistent storage.
+        </p>
+      </div>
+      <div class="col-third box warn">
+        <div class="box-title amber">Tier 3: Terraform & Cloud Atlas</div>
+        <p style="font-size:7pt; margin:0;">
+          Infrastructure-as-Code provisioning of an M0 free-tier cluster in AWS Mumbai (AP_SOUTH_1) with automated RBAC user and IP access list whitelisting.
+        </p>
+      </div>
+    </div>
+
+    <div class="section-title">2. Activity 1: Production Replica Set with Docker Compose</div>
+    <div class="grid-2">
+      <div class="col-half box">
+        <div class="box-title green">Keyfile Authentication vs Application RBAC</div>
+        <p style="font-size:7.2pt;">
+          <strong>Keyfile Authentication</strong> enforces mutual trust <em>between nodes</em>, not client users. Every cluster member mounts the same random secret file (<code>/etc/mongodb/keyfile</code>). Nodes authenticate internal heartbeats and replication streams via HMAC-SHA, rejecting any rogue mongod.
+        </p>
+        <p style="font-size:7.2pt; margin:0;">
+          <strong>Application RBAC</strong> manages human users and microservices connecting on standard ports, enforcing least privilege (e.g. <code>readWriteAnyDatabase</code>).
+        </p>
+      </div>
+      <div class="col-half box">
+        <div class="box-title blue">Order of Operations & Localhost Exception</div>
+        <p style="font-size:7.2pt;">
+          Enabling <code>--auth</code> and <code>--keyFile</code> locks out all unauthenticated access. MongoDB solves this initial bootstrap dilemma via the <strong>Localhost Exception</strong>:
+        </p>
+        <ol style="font-size:7.2pt; padding-left:14px; margin:0;">
+          <li>Generate 756-byte keyfile: <code>openssl rand -base64 756 &gt; keyfile</code>.</li>
+          <li>Start containers with <code>--replSet rs0 --auth --keyFile</code>.</li>
+          <li>Initiate cluster: <code>rs.initiate(...)</code> elects Primary.</li>
+          <li>Bootstrap superuser (<code>admin:AdminPass123!</code>) on Primary before auth locks.</li>
+          <li>All subsequent queries require authenticated credentials.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="section-title">3. Activity 1 Step-by-Step Implementation & Verification</div>
+    <pre># Step 1: Cryptographic Keyfile Generation (756 random bytes base64)
+openssl rand -base64 756 > keyfile && chmod 400 keyfile
+
+# Step 2: Production Container Compose (docker-compose-production.yml)
+docker compose -f docker-compose-production.yml up -d
+# Running: prod-mongo-1 (27017:27017), prod-mongo-2 (27018:27017), prod-mongo-3 (27019:27017)
+
+# Step 3: Replica Set Initiation (rs0)
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "mongo-rs0-1:27017", priority: 2 },
+    { _id: 1, host: "mongo-rs0-2:27017" },
+    { _id: 2, host: "mongo-rs0-3:27017", arbiterOnly: true }
+  ]
+}) -> { ok: 1 }
+
+# Step 4: Admin Superuser Creation on Primary (Localhost Exception)
+db.getSiblingDB("admin").createUser({
+  user: "admin", pwd: "AdminPass123!",
+  roles: [{role: "userAdminAnyDatabase", db: "admin"}, {role: "clusterAdmin", db: "admin"}, {role: "readWriteAnyDatabase", db: "admin"}]
+}) -> { ok: 1 }
+
+# Step 5: Verified Cluster Health (Authenticated Status)
+rs.status().members:
+ - mongo-rs0-1:27017 -> PRIMARY (health=1, priority=2)
+ - mongo-rs0-2:27017 -> SECONDARY (health=1, sync source=mongo-rs0-1)
+ - mongo-rs0-3:27017 -> ARBITER (health=1, votes=1, data=none)</pre>
+
+    <div class="box highlight">
+      <div class="box-title green">Step 6 Verification: Authenticated Write & Cross-Node Replication</div>
+      <p style="font-size:7.2pt; margin:0;">
+        Write executed to PRIMARY: <code>db.orders.insertOne({item: "Industrial Turbines", quantity: 12, status: "Shipped"})</code> &rarr; <code>acknowledged: true</code>.<br/>
+        Read executed on SECONDARY (with <code>setReadPref("primaryPreferred")</code>): <code>db.orders.find()</code> immediately returned the replicated record with matching ObjectId <code>6afd67ae004ff3c895a92a83</code>.
+      </p>
+    </div>
+  </div>
+  <div class="footer-bar">
+    <span>NoSQL Lab 13: Production Deployment &amp; Orchestration</span>
+    <span>Student: M Gouthami (24BTRCL130)</span>
+    <span>Page 1 of 3</span>
+  </div>
+</div>
+
+<!-- PAGE 2: Comparison Matrix, Connection String & Activity 2 Deep Dive -->
+<div class="page">
+  <div class="content-wrap">
+    <div class="top-bar">
+      <div>
+        <div class="top-title">Technical Deep-Dive: Developmental vs Production Architecture</div>
+        <div class="top-sub">Side-by-Side Comparison Matrix, Connection String Analysis &amp; Kubernetes Strategy</div>
+      </div>
+      <div class="meta-tag">
+        <strong>M Gouthami (24BTRCL130)</strong><br/>
+        Certified Image: <code>gouthudocker/nosql-lab13:latest</code>
+      </div>
+    </div>
+
+    <div class="section-title">4. Exhaustive Side-by-Side Comparison: Chapter 8 vs Chapter 13</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:20%;">Dimension</th>
+          <th style="width:38%;">Chapter 8 (Local Dev Replica Set)</th>
+          <th style="width:42%;">Chapter 13 (Production Replica Set)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Inter-Member Trust</strong></td>
+          <td style="color:#cf222e;">None. No keyfile; any external mongod instance can join cluster and access data.</td>
+          <td style="color:#00684a;"><strong>Enforced.</strong> 756-byte keyfile; HMAC-SHA-256 mutual validation for all heartbeats and replication.</td>
+        </tr>
+        <tr>
+          <td><strong>Client Access Control</strong></td>
+          <td style="color:#cf222e;">Disabled (<code>--noauth</code>). Unauthenticated client connections hold root privileges.</td>
+          <td style="color:#00684a;"><strong>Enforced (<code>--auth</code>).</strong> All operations require credentialed RBAC users on target databases.</td>
+        </tr>
+        <tr>
+          <td><strong>Admin User Bootstrapping</strong></td>
+          <td>None. Cluster operates with no administrative user accounts.</td>
+          <td><strong>Localhost Exception.</strong> <code>admin:AdminPass123!</code> superuser created on Primary before auth enforcement locks down.</td>
+        </tr>
+        <tr>
+          <td><strong>Docker Healthcheck</strong></td>
+          <td>Unauthenticated: <code>db.runCommand({ping:1})</code></td>
+          <td><strong>Authenticated:</strong> <code>mongosh -u admin -p AdminPass123! --authenticationDatabase admin</code></td>
+        </tr>
+        <tr>
+          <td><strong>File Permission Security</strong></td>
+          <td>Standard container bind mounts without permission validation.</td>
+          <td><strong>Strict 0400/0600 POSIX checks.</strong> Permissions on keyfile must be read-only by owner, rejecting world-readable files.</td>
+        </tr>
+        <tr>
+          <td><strong>Connection String</strong></td>
+          <td><code>mongodb://host:27017,host:27018/?replicaSet=rs0</code></td>
+          <td><code>mongodb://admin:Pass@host:27017,host:27018/admin?replicaSet=rs0&amp;authSource=admin</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="section-title">5. Production Connection String Parameter Breakdown</div>
+    <pre>mongodb://admin:AdminPass123!@host.docker.internal:27017,host.docker.internal:27018,host.docker.internal:27019/admin?replicaSet=rs0&authSource=admin</pre>
+    <div class="grid-2">
+      <div class="col-half box">
+        <p style="font-size:7.2pt; margin:0;">
+          <strong>• <code>admin:AdminPass123!</code>:</strong> Authenticated credentials provisioned during the initial bootstrapping phase.<br/>
+          <strong>• <code>3-Node Seedlist</code>:</strong> Allows client drivers to discover the active Primary even if node 0 is offline during failover.
+        </p>
+      </div>
+      <div class="col-half box">
+        <p style="font-size:7.2pt; margin:0;">
+          <strong>• <code>replicaSet=rs0</code>:</strong> Mandates topology discovery, tracking election state changes and routing writes exclusively to Primary.<br/>
+          <strong>• <code>authSource=admin</code>:</strong> Designates the authentication database where user credentials and privileges reside.
+        </p>
+      </div>
+    </div>
+
+    <div class="section-title blue">6. Activity 2: Kubernetes StatefulSet for MongoDB</div>
+    <div class="grid-3">
+      <div class="col-third box">
+        <div class="box-title blue">Why Deployments Fail</div>
+        <p style="font-size:7pt; margin:0;">
+          Pods in a <code>Deployment</code> are stateless and interchangeable. Restarts generate random names (e.g. <code>mongo-9b8f-1</code>) and new IPs. Because member identities are baked into <code>rs.conf()</code>, pod restarts destroy cluster topology.
+        </p>
+      </div>
+      <div class="col-third box">
+        <div class="box-title blue">Headless Service (clusterIP: None)</div>
+        <p style="font-size:7pt; margin:0;">
+          Bypasses kube-proxy load-balancing. CoreDNS creates stable A-records for each pod: <code>mongo-0.mongo.nosql-labs.svc.cluster.local</code>. Pods maintain direct peer-to-peer addressing across restarts.
+        </p>
+      </div>
+      <div class="col-third box">
+        <div class="box-title blue">volumeClaimTemplates</div>
+        <p style="font-size:7pt; margin:0;">
+          Dynamically provisions a dedicated PersistentVolumeClaim per pod (<code>mongo-data-mongo-0</code>). If a pod is rescheduled onto a different worker node, it re-attaches to its exact storage volume without data collision.
+        </p>
+      </div>
+    </div>
+
+    <div class="section-title blue">7. Architectural Prediction &amp; Verification</div>
+    <div class="box blue-bg">
+      <p style="font-size:7.2pt;">
+        <strong>Question:</strong> Predict what <code>serviceName</code> field the StatefulSet needs to reference for stable pod-naming to work, and what would break if it referenced the wrong Service (or none at all)?
+      </p>
+      <p style="font-size:7.2pt; margin:0;">
+        <strong>Technical Answer &amp; Verification:</strong><br/>
+        1. <strong>Required Reference:</strong> The StatefulSet spec must explicitly specify <code>serviceName: mongo</code>, matching the exact name of the headless Service created in <code>01-headless-service.yaml</code>.<br/>
+        2. <strong>Consequence of Misconfiguration:</strong> The StatefulSet controller relies on <code>serviceName</code> to register predictable DNS A-records in CoreDNS. If missing or misconfigured, no per-pod DNS records are created. As a result, pods cannot discover each other; the initialization Job (<code>03-replicaset-init-job.yaml</code>) calling <code>rs.initiate()</code> fails with host resolution errors; and heartbeats fail, leaving the cluster permanently broken.
+      </p>
+    </div>
+  </div>
+  <div class="footer-bar">
+    <span>NoSQL Lab 13: Production Deployment &amp; Orchestration</span>
+    <span>Student: M Gouthami (24BTRCL130)</span>
+    <span>Page 2 of 3</span>
+  </div>
+</div>
+
+<!-- PAGE 3: Cloud Provisioning, Web Platform & Docker Hub Deployment -->
+<div class="page">
+  <div class="content-wrap">
+    <div class="top-bar">
+      <div>
+        <div class="top-title">Cloud Provisioning, Web Platform &amp; Certified Docker Submission</div>
+        <div class="top-sub">Terraform Atlas Infrastructure-as-Code &amp; Enterprise Docker Hub Release</div>
+      </div>
+      <div class="meta-tag">
+        <strong>M Gouthami (24BTRCL130)</strong><br/>
+        Port: <code>5003:5000</code> | Status: <code>ONLINE</code>
+      </div>
+    </div>
+
+    <div class="section-title amber">8. Terraform for MongoDB Atlas (main.tf)</div>
+    <p>
+      Declarative cloud provisioning automates the deployment of fully managed MongoDB Atlas clusters using Infrastructure-as-Code (IaC). The <code>main.tf</code> configuration defines:
+    </p>
+    <div class="grid-2">
+      <div class="col-half box">
+        <div class="box-title amber">Provider &amp; Cluster Specification</div>
+        <pre style="margin:0;">terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    mongodbatlas = { source = "mongodb/mongodbatlas", version = "~> 1.16" }
+  }
+}
+resource "mongodbatlas_cluster" "training" {
+  name                   = "training-cluster"
+  cluster_type           = "REPLICASET"
+  provider_name          = "AWS"
+  provider_region_name   = "AP_SOUTH_1" # Mumbai
+  provider_instance_size_name = "M0"     # Free tier
+  mongo_db_major_version = "7.0"
+}</pre>
+      </div>
+      <div class="col-half box">
+        <div class="box-title amber">User Security &amp; Network Whitelist</div>
+        <pre style="margin:0;">resource "mongodbatlas_database_user" "lab_user" {
+  project_id         = mongodbatlas_project.nosql_labs.id
+  username           = "lab_user"
+  password           = var.atlas_user_password
+  auth_database_name = "admin"
+  roles { role_name = "readWriteAnyDatabase", database_name = "admin" }
+}
+resource "mongodbatlas_ip_access_list" "allow_all" {
+  project_id = mongodbatlas_project.nosql_labs.id
+  cidr_block = "0.0.0.0/0"
+  comment    = "Training IP Access"
+}</pre>
+      </div>
+    </div>
+
+    <div class="section-title">9. Interactive Web Platform Architecture (Flask &amp; PyMongo)</div>
+    <p>
+      An enterprise web dashboard was built, containerized, and integrated to provide an intuitive interface for cluster inspection and grading. Hosted at <code>http://localhost:5003</code>:
+    </p>
+    <div class="grid-3">
+      <div class="col-third box highlight">
+        <div class="box-title green">Live Topology Gauges</div>
+        <p style="font-size:7pt; margin:0;">
+          Real-time member status monitor polling <code>rs.status()</code> via Primary. Displays Primary, Secondary, Arbiter, health metrics, and uptime.
+        </p>
+      </div>
+      <div class="col-third box blue-bg">
+        <div class="box-title blue">Interactive Replication Tester</div>
+        <p style="font-size:7pt; margin:0;">
+          Executes writes directly to Primary and verifies immediate replicated read from Secondary across isolated container networks.
+        </p>
+      </div>
+      <div class="col-third box">
+        <div class="box-title green">Manifest &amp; HCL Inspector</div>
+        <p style="font-size:7pt; margin:0;">
+          Syntax-highlighted live viewer for all 4 generated Kubernetes manifests and Terraform cloud provisioning configurations.
+        </p>
+      </div>
+    </div>
+
+    <div class="section-title">10. Certified Docker Hub Deployment &amp; Grading Instructions</div>
+    <div class="box highlight">
+      <div class="box-title green">Official Docker Hub Repository</div>
+      <p style="font-size:7.4pt; margin:0;">
+        • <strong>Registry URL:</strong> <a href="https://hub.docker.com/r/gouthudocker/nosql-lab13">https://hub.docker.com/r/gouthudocker/nosql-lab13</a><br/>
+        • <strong>Certified Tags:</strong> <code>gouthudocker/nosql-lab13:latest</code>, <code>gouthudocker/nosql-lab13:v1.0</code><br/>
+        • <strong>Fleet Integration:</strong> Lab 10 (Port 5000), Lab 11 (Port 5001), Lab 12 (Port 5002), <strong>Lab 13 (Port 5003)</strong>
+      </p>
+    </div>
+
+    <pre># ====================================================================
+# STEP-BY-STEP GRADING & VERIFICATION COMMANDS
+# ====================================================================
+
+# 1. Pull the official certified Docker image from Docker Hub
+docker pull gouthudocker/nosql-lab13:latest
+
+# 2. Deploy the hardened production replica set and web application
+docker compose -f docker-compose-production.yml up -d
+docker compose up -d
+
+# 3. Access the interactive web platform in your web browser
+http://localhost:5003
+
+# 4. Check cluster status via REST API
+curl http://localhost:5003/api/status
+
+# 5. Verify live write/read replication via REST API
+curl -X POST http://localhost:5003/api/test-replication \
+  -H "Content-Type: application/json" \
+  -d '{"item": "Avionics Control Unit V3", "quantity": 8}'
+
+# 6. Generate and inspect Kubernetes manifests
+python lab_02_k8s_statefulset.py</pre>
+
+    <div class="section-title">11. Conclusion</div>
+    <p style="font-size:7.2pt; margin:0;">
+      Through Chapter 13, we engineered and verified production deployment standards for MongoDB across local containers, Kubernetes orchestration, and cloud infrastructure. By enforcing keyfile HMAC mutual trust and bootstrapping via the Localhost Exception, inter-member and client security were hardened. In Kubernetes, StatefulSets paired with Headless Services and volumeClaimTemplates solved the challenges of stateful pod identity and storage isolation. Finally, Terraform provided reproducible Infrastructure-as-Code for MongoDB Atlas. The complete solution is containerized, tested, and published to Docker Hub.
+    </p>
+  </div>
+  <div class="footer-bar">
+    <span>NoSQL Lab 13: Production Deployment &amp; Orchestration</span>
+    <span>Student: M Gouthami (24BTRCL130)</span>
+    <span>Page 3 of 3</span>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,200 @@
+[
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da171"
+    },
+    "sku": "PROD-001",
+    "name": "Wireless Ergonomic Keyboard",
+    "category": "Peripherals",
+    "price": 49.99,
+    "stock": 25,
+    "tags": [
+      "electronics",
+      "wireless",
+      "ergonomic",
+      "office"
+    ],
+    "brand": "LogiTech",
+    "is_active": true
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da172"
+    },
+    "sku": "PROD-002",
+    "name": "Ultra HD 4K Gaming Monitor",
+    "category": "Displays",
+    "price": 349.99,
+    "stock": 15,
+    "tags": [
+      "electronics",
+      "premium",
+      "gaming"
+    ],
+    "brand": "ViewSonic",
+    "is_active": true
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da173"
+    },
+    "sku": "PROD-003",
+    "name": "Noise Cancelling Wireless Headphones",
+    "category": "Audio",
+    "price": 199.99,
+    "stock": 0,
+    "tags": [
+      "electronics",
+      "wireless",
+      "premium"
+    ],
+    "brand": "Sony",
+    "is_active": false
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da174"
+    },
+    "sku": "PROD-004",
+    "name": "USB-C Fast Charging Cable",
+    "category": "Accessories",
+    "price": 15.99,
+    "stock": 120,
+    "tags": [
+      "electronics",
+      "accessories"
+    ],
+    "brand": "Anker",
+    "is_active": true
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da175"
+    },
+    "sku": "PROD-005",
+    "name": "Wireless Optical Mouse",
+    "category": "Peripherals",
+    "price": 29.99,
+    "stock": 60,
+    "tags": [
+      "electronics",
+      "wireless"
+    ],
+    "brand": "LogiTech",
+    "is_active": true
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da176"
+    },
+    "sku": "PROD-006",
+    "name": "Mechanical RGB Gaming Keyboard",
+    "category": "Peripherals",
+    "price": 129.99,
+    "stock": 18,
+    "tags": [
+      "electronics",
+      "gaming",
+      "premium"
+    ],
+    "brand": "Corsair",
+    "is_active": true
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da177"
+    },
+    "sku": "PROD-007",
+    "name": "Executive Leather Office Chair",
+    "category": "Furniture",
+    "price": 249.99,
+    "stock": 0,
+    "tags": [
+      "furniture",
+      "office"
+    ],
+    "brand": "HermanMiller",
+    "is_active": false
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da178"
+    },
+    "sku": "PROD-008",
+    "name": "Adjustable Aluminum Laptop Stand",
+    "category": "Accessories",
+    "price": 39.99,
+    "stock": 45,
+    "tags": [
+      "accessories",
+      "ergonomic"
+    ],
+    "brand": "RainDesign",
+    "is_active": true
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da179"
+    },
+    "sku": "PROD-009",
+    "name": "Smart LED Desk Lamp",
+    "category": "Lighting",
+    "price": 45.0,
+    "stock": 0,
+    "tags": [
+      "lighting",
+      "smart-home"
+    ],
+    "brand": "Philips",
+    "is_active": false
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da17a"
+    },
+    "sku": "PROD-010",
+    "name": "Portable Bluetooth Wireless Speaker",
+    "category": "Audio",
+    "price": 79.99,
+    "stock": 35,
+    "tags": [
+      "electronics",
+      "wireless",
+      "audio"
+    ],
+    "brand": "JBL",
+    "is_active": true
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da17b"
+    },
+    "sku": "PROD-011",
+    "name": "Premium Full-Grain Leather Desk Mat",
+    "category": "Office",
+    "price": 34.5,
+    "stock": 50,
+    "tags": [
+      "office",
+      "premium"
+    ],
+    "brand": "Grovemade",
+    "is_active": true
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe239c98494786da17c"
+    },
+    "sku": "PROD-012",
+    "name": "Full HD 1080p Streaming WebCam",
+    "category": "Peripherals",
+    "price": 49.0,
+    "stock": 0,
+    "tags": [
+      "electronics",
+      "video"
+    ],
+    "brand": "LogiTech",
+    "is_active": false
+  }
+]

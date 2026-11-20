@@ -1,0 +1,93 @@
+[
+  {
+    "_id": {
+      "$oid": "6af99fe69a7a4e2ff9f47f33"
+    },
+    "sku": "PROD-A",
+    "name": "Mechanical Keyboard A",
+    "price": 99.95,
+    "stock": 25,
+    "is_active": true,
+    "category": "Keyboards",
+    "updated_at": {
+      "$date": "2026-11-15T12:04:54.348Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe69a7a4e2ff9f47f34"
+    },
+    "sku": "PROD-B",
+    "name": "Wireless Mouse B",
+    "price": 49.99,
+    "stock": 40,
+    "is_active": true,
+    "category": "Mice"
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe69a7a4e2ff9f47f35"
+    },
+    "sku": "PROD-C",
+    "name": "Gaming Headset C",
+    "price": 119.99,
+    "stock": 60,
+    "is_active": true,
+    "category": "Audio"
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe69a7a4e2ff9f47f36"
+    },
+    "sku": "PROD-D",
+    "name": "USB Hub D",
+    "price": 24.99,
+    "stock": 20,
+    "is_active": false,
+    "category": "Accessories"
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe69a7a4e2ff9f47f37"
+    },
+    "sku": "PROD-E",
+    "name": "Webcam HD E",
+    "price": 59.99,
+    "stock": 10,
+    "is_active": false,
+    "category": "Cameras"
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe62c2460874971283f"
+    },
+    "sku": "PROD-NEW",
+    "category": "Audio",
+    "created_at": {
+      "$date": "2026-11-15T12:04:54.352Z"
+    },
+    "is_active": true,
+    "name": "Smart Wireless Earbuds",
+    "price": 149.5,
+    "stock": 40,
+    "tags": [
+      "audio",
+      "wireless",
+      "premium"
+    ],
+    "updated_at": {
+      "$date": "2026-11-15T12:04:54.352Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6af99fe62c24608749712840"
+    },
+    "sku": "PROD-F",
+    "category": "Displays",
+    "is_active": true,
+    "name": "Product F Curved Display",
+    "price": 199.99,
+    "stock": 25
+  }
+]

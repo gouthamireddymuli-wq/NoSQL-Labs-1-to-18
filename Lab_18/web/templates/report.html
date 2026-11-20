@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Activity 2: Comparative Analysis Report | NoSQL Lab 18{% endblock %}
+
+{% block extra_head %}
+<!-- Markdown-it for client-side markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+<style>
+  .prose-dark h1 { font-size: 1.5rem; font-weight: 800; color: #ffffff; margin-top: 1.25rem; margin-bottom: 0.75rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+  .prose-dark h2 { font-size: 1.25rem; font-weight: 700; color: #38bdf8; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .prose-dark h3 { font-size: 1.05rem; font-weight: 600; color: #34d399; margin-top: 1rem; margin-bottom: 0.5rem; }
+  .prose-dark p { margin-bottom: 0.85rem; line-height: 1.6; color: #cbd5e1; font-size: 0.875rem; }
+  .prose-dark ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; font-size: 0.875rem; color: #cbd5e1; }
+  .prose-dark li { margin-bottom: 0.35rem; }
+  .prose-dark table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.8rem; }
+  .prose-dark th { background-color: #0f172a; border: 1px solid #334155; padding: 0.6rem 0.75rem; color: #94a3b8; text-transform: uppercase; font-size: 0.7rem; font-weight: 700; }
+  .prose-dark td { border: 1px solid #334155; padding: 0.5rem 0.75rem; color: #e2e8f0; }
+  .prose-dark pre { background-color: #020617; border: 1px solid #1e293b; border-radius: 0.5rem; padding: 1rem; overflow-x: auto; font-family: monospace; font-size: 0.75rem; color: #93c5fd; margin-bottom: 1rem; }
+  .prose-dark code { font-family: monospace; background-color: #1e293b; padding: 0.15rem 0.35rem; border-radius: 0.25rem; color: #34d399; font-size: 0.75rem; }
+  .prose-dark hr { border-color: #334155; margin: 1.5rem 0; }
+  .prose-dark strong { color: #f8fafc; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header Banner -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-cyan-400 mb-1">
+        <i class="fa-solid fa-file-contract"></i> Activity 2 • Technical Analysis Report
+      </div>
+      <h1 class="text-2xl font-extrabold text-white">Comparative Analysis Report</h1>
+      <p class="text-xs text-slate-400 mt-1">
+        Synthesizes the live MongoDB benchmark with architectural evaluations of Cassandra and Neo4j into a production-grade decision document.
+      </p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-wrap items-center gap-3">
+      <button id="btnGenReport" onclick="generateReport()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-lg shadow-emerald-500/20">
+        <i class="fa-solid fa-arrows-rotate"></i> Re-generate Report
+      </button>
+      <a href="/api/download/report-md" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+        <i class="fa-solid fa-download text-cyan-400"></i> Export Markdown
+      </a>
+      <a href="/api/download/report-pdf" target="_blank" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-lg shadow-rose-600/20">
+        <i class="fa-solid fa-file-pdf"></i> Download PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Report Metadata & Controls -->
+  <div class="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-5 py-3 text-xs">
+    <div class="flex items-center gap-4">
+      <span class="text-slate-400">File: <strong id="reportFilename" class="text-slate-200 font-mono">Loading...</strong></span>
+      <span class="text-slate-500">•</span>
+      <span class="text-slate-400">Status: <strong class="text-emerald-400">Verified &amp; Measured</strong></span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="tabRendered" onclick="switchView('rendered')" class="px-2.5 py-1 rounded bg-slate-800 text-emerald-400 border border-slate-700 text-xs font-semibold">Rendered View</button>
+      <button id="tabRaw" onclick="switchView('raw')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white text-xs">Raw Markdown</button>
+    </div>
+  </div>
+
+  <!-- Report Body Container -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-8">
+    <div id="renderedView" class="prose-dark max-w-none">
+      <div class="py-12 text-center text-slate-500">
+        <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-cyan-400 block"></i>
+        Loading latest comparative analysis report...
+      </div>
+    </div>
+    <div id="rawView" class="hidden">
+      <textarea id="rawMarkdown" readonly class="w-full h-[650px] p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-slate-300 leading-relaxed custom-scrollbar focus:outline-none"></textarea>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const md = window.markdownit({ html: true, linkify: true, typographer: true });
+
+  async function loadLatestReport() {
+    try {
+      const res = await fetch('/api/lab2/latest-report');
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('reportFilename').textContent = data.filename;
+        document.getElementById('rawMarkdown').value = data.markdown;
+        document.getElementById('renderedView').innerHTML = md.render(data.markdown);
+      }
+    } catch (e) {
+      showToast('Error loading report: ' + e.message, 'error');
+    }
+  }
+
+  async function generateReport() {
+    const btn = document.getElementById('btnGenReport');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating...`;
+    try {
+      const res = await fetch('/api/lab2/generate-report', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('reportFilename').textContent = data.filename;
+        document.getElementById('rawMarkdown').value = data.markdown;
+        document.getElementById('renderedView').innerHTML = md.render(data.markdown);
+        showToast('Generated fresh report with live benchmark data!', 'success');
+      }
+    } catch (e) {
+      showToast('Generation failed: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i> Re-generate Report`;
+    }
+  }
+
+  function switchView(mode) {
+    const rendered = document.getElementById('renderedView');
+    const raw = document.getElementById('rawView');
+    const tabRendered = document.getElementById('tabRendered');
+    const tabRaw = document.getElementById('tabRaw');
+
+    if (mode === 'rendered') {
+      rendered.classList.remove('hidden');
+      raw.classList.add('hidden');
+      tabRendered.className = 'px-2.5 py-1 rounded bg-slate-800 text-emerald-400 border border-slate-700 text-xs font-semibold';
+      tabRaw.className = 'px-2.5 py-1 rounded text-slate-400 hover:text-white text-xs';
+    } else {
+      rendered.classList.add('hidden');
+      raw.classList.remove('hidden');
+      tabRaw.className = 'px-2.5 py-1 rounded bg-slate-800 text-emerald-400 border border-slate-700 text-xs font-semibold';
+      tabRendered.className = 'px-2.5 py-1 rounded text-slate-400 hover:text-white text-xs';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadLatestReport);
+</script>
+{% endblock %}

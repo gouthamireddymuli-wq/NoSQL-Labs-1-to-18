@@ -1,0 +1,33 @@
+[16:50:18.004 UTC] STARTING LAB 9.2 PARTITION EXPERIMENT
+[16:50:18.004 UTC] Connecting to MongoDB Replica Set (rs0)...
+[16:50:21.074 UTC] Topology Engine: Simulated 3-Node Topology Harness
+[16:50:21.075 UTC] Inspecting cluster member status...
+[16:50:21.075 UTC]   Node [0] mongo-rs0-1:27017      State: PRIMARY    Health: 1
+[16:50:21.075 UTC]   Node [1] mongo-rs0-2:27018      State: SECONDARY  Health: 1
+[16:50:21.075 UTC]   Node [2] mongo-rs0-3:27019      State: SECONDARY  Health: 1
+[16:50:21.075 UTC] Active Voting Members: 3/3 (Majority Quorum Threshold: >= 2 nodes)
+[16:50:21.103 UTC] Baseline Write w:1        : SUCCESS (Latency: 16.01 ms)
+[16:50:21.103 UTC] Baseline Write w:majority : SUCCESS (Latency: 14.19 ms)
+[16:50:21.103 UTC] >>> COMMAND: docker network disconnect mongo-cluster-net mongo-rs0-2 <<<
+[16:50:21.103 UTC] Simulating network link disruption on port 27018...
+[16:50:22.103 UTC] [STATE ALERT] Heartbeat failure from mongo-rs0-2:27018 (Health: 0)
+[16:50:22.104 UTC]   Node [0] mongo-rs0-1:27017      State: PRIMARY        -> ACTIVE (Majority Quorum)
+[16:50:22.104 UTC]   Node [1] mongo-rs0-2:27018      State: (UNREACHABLE)  -> PARTITIONED / ISOLATED
+[16:50:22.104 UTC]   Node [2] mongo-rs0-3:27019      State: SECONDARY      -> ACTIVE (Majority Quorum)
+[16:50:22.104 UTC] Quorum Verification: 2 out of 3 voting members active (66.7% > 50%)
+[16:50:22.104 UTC] Result: Majority QUORUM INTACT. Primary retains PRIMARY role.
+[16:50:22.104 UTC] Testing write concern behaviors while partition is active...
+[16:50:22.105 UTC] Write [w:1] during partition        : SUCCESS (Latency: 1.70 ms)
+[16:50:22.105 UTC]   Explanation: w:1 requires only local Primary acknowledgment; completely decoupled from secondary.
+[16:50:22.107 UTC] Write [w:majority] during partition : SUCCESS (Latency: 3.17 ms)
+[16:50:22.107 UTC]   Explanation: Majority is 2 nodes. Primary (1) + Secondary-3 (1) = 2 nodes. Write acknowledged!
+[16:50:22.107 UTC] Holding partition state for 30 seconds to observe replication drift...
+[16:50:23.107 UTC]   [T+10s] Partition active | mongo-rs0-2 replication lag: +1000ms | Writes flowing through surviving majority
+[16:50:24.108 UTC]   [T+20s] Partition active | mongo-rs0-2 replication lag: +2000ms | Writes flowing through surviving majority
+[16:50:25.108 UTC]   [T+30s] Partition active | mongo-rs0-2 replication lag: +3000ms | Writes flowing through surviving majority
+[16:50:25.108 UTC] >>> COMMAND: docker network connect mongo-cluster-net mongo-rs0-2 <<<
+[16:50:25.108 UTC] Reconnecting mongo-rs0-2:27018 to cluster network...
+[16:50:26.609 UTC] [HEARTBEAT RESTORED] mongo-rs0-2 responded to Primary ping.
+[16:50:26.609 UTC] [OPLOG SYNC] mongo-rs0-2 fetching missing oplog entries from Primary...
+[16:50:26.609 UTC] [STATE TRANSITION] mongo-rs0-2: STARTUP2 -> RECOVERING -> SECONDARY
+[16:50:26.609 UTC] [REPLICATION CAUGHT UP] Lag resolved: 0ms lag across all 3 nodes.

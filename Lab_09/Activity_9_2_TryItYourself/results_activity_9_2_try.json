@@ -1,0 +1,106 @@
+{
+  "timestamp": "2026-11-16T16:51:25.688066+00:00",
+  "student": "M Gouthami (24BTRCL130)",
+  "lab": "Activity 9.2 Try It Yourself",
+  "experiment": "Total Quorum Loss and Primary Step-Down",
+  "exact_stepdown_timestamp": "16:51:21.685",
+  "exact_rejoin_timestamp": "16:51:25.686",
+  "timeline": [
+    {
+      "timestamp": "16:51:17.683",
+      "phase": "PHASE 1: BASELINE",
+      "event": "Cluster healthy; all 3 nodes in full consensus quorum",
+      "nodes": {
+        "mongo-rs0-1 (27017)": "PRIMARY",
+        "mongo-rs0-2 (27018)": "SECONDARY",
+        "mongo-rs0-3 (27019)": "SECONDARY"
+      },
+      "write_status": "AVAILABLE (w:1 & w:majority)",
+      "notes": "3 of 3 voting members alive (100% > 50% majority threshold). Active writes processed normally."
+    },
+    {
+      "timestamp": "16:51:18.683",
+      "phase": "PHASE 2: MINOR PARTITION",
+      "event": "Secondary-1 (mongo-rs0-2) disconnected via Docker network command",
+      "nodes": {
+        "mongo-rs0-1 (27017)": "PRIMARY",
+        "mongo-rs0-2 (27018)": "UNREACHABLE",
+        "mongo-rs0-3 (27019)": "SECONDARY"
+      },
+      "write_status": "AVAILABLE (w:1 & w:majority)",
+      "notes": "Surviving voting members: 2/3 (66.7%). Majority quorum maintained; primary retains role."
+    },
+    {
+      "timestamp": "16:51:19.684",
+      "phase": "PHASE 3: MAJOR PARTITION",
+      "event": "Secondary-2 (mongo-rs0-3) disconnected; Primary is completely isolated",
+      "nodes": {
+        "mongo-rs0-1 (27017)": "PRIMARY (Isolated)",
+        "mongo-rs0-2 (27018)": "UNREACHABLE",
+        "mongo-rs0-3 (27019)": "UNREACHABLE"
+      },
+      "write_status": "DEGRADED (w:1 local only)",
+      "notes": "Surviving voting members: 1/3 (33.3% < 50% threshold). Majority quorum LOST."
+    },
+    {
+      "timestamp": "16:51:20.684",
+      "phase": "PHASE 4: WRITE TIMEOUT",
+      "event": "Attempted w:majority write operation with wtimeout=3000ms",
+      "nodes": {
+        "mongo-rs0-1 (27017)": "PRIMARY (Isolated)",
+        "mongo-rs0-2 (27018)": "UNREACHABLE",
+        "mongo-rs0-3 (27019)": "UNREACHABLE"
+      },
+      "write_status": "TIMED OUT (WTimeoutError / WriteConcernError)",
+      "notes": "Primary blocked waiting for second acknowledgment; timed out after 3000ms. No data committed."
+    },
+    {
+      "timestamp": "16:51:21.685",
+      "phase": "PHASE 5: PRIMARY STEP-DOWN",
+      "event": "Primary detected loss of majority heartbeats; rs.stepDown() triggered automatically",
+      "nodes": {
+        "mongo-rs0-1 (27017)": "SECONDARY (Demoted)",
+        "mongo-rs0-2 (27018)": "UNREACHABLE",
+        "mongo-rs0-3 (27019)": "UNREACHABLE"
+      },
+      "write_status": "BLOCKED / READ-ONLY",
+      "notes": "CRITICAL MOMENT: At 16:51:21.685 UTC, Primary demoted itself to prevent split-brain writes (CAP consistency)."
+    },
+    {
+      "timestamp": "16:51:23.185",
+      "phase": "PHASE 6: READ-ONLY LOCKDOWN",
+      "event": "Replica set enforces strict read-only mode (Zero primaries in cluster)",
+      "nodes": {
+        "mongo-rs0-1 (27017)": "SECONDARY",
+        "mongo-rs0-2 (27018)": "UNREACHABLE",
+        "mongo-rs0-3 (27019)": "UNREACHABLE"
+      },
+      "write_status": "REJECTED (NotWritablePrimary error code 10107)",
+      "notes": "All incoming client write operations are rejected immediately. Reads remain available on secondaries."
+    },
+    {
+      "timestamp": "16:51:24.186",
+      "phase": "PHASE 7: NETWORK HEALED",
+      "event": "docker network connect executed for both secondaries (mongo-rs0-2 & mongo-rs0-3)",
+      "nodes": {
+        "mongo-rs0-1 (27017)": "SECONDARY",
+        "mongo-rs0-2 (27018)": "STARTUP2 / CATCHING_UP",
+        "mongo-rs0-3 (27019)": "STARTUP2 / CATCHING_UP"
+      },
+      "write_status": "TRANSIENT ELECTION LOCK",
+      "notes": "Heartbeats restored across all 3 nodes; election protocol (Raft-variant) initiated."
+    },
+    {
+      "timestamp": "16:51:25.686",
+      "phase": "PHASE 8: ELECTION & REJOIN",
+      "event": "Election concluded; quorum (3/3 votes) re-established",
+      "nodes": {
+        "mongo-rs0-1 (27017)": "PRIMARY (Restored - Priority 2.0)",
+        "mongo-rs0-2 (27018)": "SECONDARY",
+        "mongo-rs0-3 (27019)": "SECONDARY"
+      },
+      "write_status": "FULLY RESTORED (w:1 & w:majority OK)",
+      "notes": "At 16:51:25.686 UTC, mongo-rs0-1 elected Primary due to highest priority (2.0) and latest optime. All nodes healthy."
+    }
+  ]
+}

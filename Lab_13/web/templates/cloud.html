@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Terraform & Atlas - NoSQL Lab 13 Cloud Provisioning{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">
+            <i class="fa-solid fa-cloud text-warning me-2"></i> Cloud Provisioning: Terraform & MongoDB Atlas
+        </h2>
+        <p class="text-muted mb-0">Infrastructure-as-Code (IaC) for Automated Managed Database Clusters</p>
+    </div>
+    <span class="badge bg-warning text-dark px-3 py-2 fs-6">
+        <i class="fa-solid fa-code me-1"></i> Terraform (HCL)
+    </span>
+</div>
+
+<!-- Cloud Architecture Highlights -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card card-custom h-100 p-3">
+            <span class="text-muted small fw-bold text-uppercase">Provider</span>
+            <h5 class="fw-bold text-dark mt-1 mb-1">mongodbatlas</h5>
+            <small class="text-muted">Version ~> 1.16 provider plugin via Terraform Registry</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom h-100 p-3">
+            <span class="text-muted small fw-bold text-uppercase">Cloud Region</span>
+            <h5 class="fw-bold text-primary mt-1 mb-1">AWS AP_SOUTH_1</h5>
+            <small class="text-muted">Mumbai datacenter for lowest latency in South Asia</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom h-100 p-3">
+            <span class="text-muted small fw-bold text-uppercase">Cluster Tier</span>
+            <h5 class="fw-bold text-success mt-1 mb-1">M0 Free Tier</h5>
+            <small class="text-muted">3-node managed replica set with auto disk scaling enabled</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom h-100 p-3">
+            <span class="text-muted small fw-bold text-uppercase">Database Version</span>
+            <h5 class="fw-bold text-info mt-1 mb-1">MongoDB 7.0</h5>
+            <small class="text-muted">WiredTiger storage engine with standard SRV connection string</small>
+        </div>
+    </div>
+</div>
+
+<!-- Terraform Workflow & main.tf Review -->
+<div class="card card-custom mb-4">
+    <div class="card-header bg-white border-0 pt-3">
+        <h5 class="fw-bold mb-0">
+            <i class="fa-solid fa-terminal text-secondary me-2"></i> Terraform Infrastructure Lifecycle
+        </h5>
+        <small class="text-muted">Standard 3-stage plan and apply workflow for declarative provisioning:</small>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="p-3 border rounded-3 bg-light">
+                    <span class="badge bg-secondary mb-2">Stage 1</span>
+                    <h6 class="fw-bold">terraform init</h6>
+                    <p class="small text-muted mb-0">
+                        Downloads the official MongoDB Atlas provider binary and initializes the backend state.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 border rounded-3 bg-light">
+                    <span class="badge bg-primary mb-2">Stage 2</span>
+                    <h6 class="fw-bold">terraform plan</h6>
+                    <p class="small text-muted mb-0">
+                        Calculates execution graph diff: creates project, provisions M0 cluster, sets up RBAC user, and adds IP whitelist.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 border rounded-3 bg-light">
+                    <span class="badge bg-success mb-2">Stage 3</span>
+                    <h6 class="fw-bold">terraform apply</h6>
+                    <p class="small text-muted mb-0">
+                        Executes API calls to MongoDB Atlas API, provisions infrastructure, and outputs the SRV cluster URI.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- main.tf Code Display -->
+<div class="card card-custom">
+    <div class="card-header bg-white border-0 pt-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">
+                <i class="fa-solid fa-file-invoice text-success me-2"></i> Terraform Manifest (<code>main.tf</code>)
+            </h5>
+            <button class="btn btn-sm btn-outline-secondary" onclick="copyTf()">
+                <i class="fa-regular fa-copy me-1"></i> Copy HCL
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <pre class="code-block" id="tfCode"><code>{{ tf_code }}</code></pre>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyTf() {
+    const text = document.getElementById('tfCode').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Terraform HCL copied to clipboard!');
+    });
+}
+</script>
+{% endblock %}

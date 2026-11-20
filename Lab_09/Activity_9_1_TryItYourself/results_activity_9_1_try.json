@@ -1,0 +1,109 @@
+{
+  "timestamp": "2026-11-16T16:49:33.154654+00:00",
+  "student": "M Gouthami (24BTRCL130)",
+  "lab": "Activity 9.1 Try It Yourself",
+  "doc_count": 1000,
+  "results": [
+    {
+      "label": "w1_j0",
+      "write_concern": "1",
+      "journal": false,
+      "doc_count": 1000,
+      "total_time_sec": 0.239,
+      "avg_ms": 0.239,
+      "p50_ms": 0.166,
+      "p90_ms": 0.394,
+      "p99_ms": 0.717,
+      "throughput_ops_sec": 4176.9,
+      "description": "w:1, j:false (Memory-only)"
+    },
+    {
+      "label": "w1_j1",
+      "write_concern": "1",
+      "journal": true,
+      "doc_count": 1000,
+      "total_time_sec": 1.167,
+      "avg_ms": 1.167,
+      "p50_ms": 1.084,
+      "p90_ms": 1.664,
+      "p99_ms": 2.422,
+      "throughput_ops_sec": 856.9,
+      "description": "w:1, j:true (Disk Journal)"
+    },
+    {
+      "label": "wmaj_j0",
+      "write_concern": "majority",
+      "journal": false,
+      "doc_count": 1000,
+      "total_time_sec": 2.024,
+      "avg_ms": 2.024,
+      "p50_ms": 1.958,
+      "p90_ms": 2.169,
+      "p99_ms": 2.428,
+      "throughput_ops_sec": 494.1,
+      "description": "w:majority, j:false (Quorum In-Memory)"
+    },
+    {
+      "label": "wmaj_j1",
+      "write_concern": "majority",
+      "journal": true,
+      "doc_count": 1000,
+      "total_time_sec": 2.959,
+      "avg_ms": 2.959,
+      "p50_ms": 2.885,
+      "p90_ms": 3.397,
+      "p99_ms": 4.039,
+      "throughput_ops_sec": 337.9,
+      "description": "w:majority, j:true (Quorum Disk Journal)"
+    },
+    {
+      "label": "wall_j0",
+      "write_concern": "3",
+      "journal": false,
+      "doc_count": 1000,
+      "total_time_sec": 3.669,
+      "avg_ms": 3.669,
+      "p50_ms": 3.559,
+      "p90_ms": 3.926,
+      "p99_ms": 4.379,
+      "throughput_ops_sec": 272.6,
+      "description": "w:all, j:false (All Nodes In-Memory)"
+    },
+    {
+      "label": "wall_j1",
+      "write_concern": "3",
+      "journal": true,
+      "doc_count": 1000,
+      "total_time_sec": 4.56,
+      "avg_ms": 4.56,
+      "p50_ms": 4.511,
+      "p90_ms": 4.901,
+      "p99_ms": 5.614,
+      "throughput_ops_sec": 219.3,
+      "description": "w:all, j:true (All Nodes Disk Journal)"
+    }
+  ],
+  "journal_deltas": [
+    {
+      "level": "w:1",
+      "no_journal_avg_ms": 0.239,
+      "journal_avg_ms": 1.167,
+      "added_latency_ms": 0.928,
+      "percentage_increase": 388.3
+    },
+    {
+      "level": "w:majority",
+      "no_journal_avg_ms": 2.024,
+      "journal_avg_ms": 2.959,
+      "added_latency_ms": 0.935,
+      "percentage_increase": 46.2
+    },
+    {
+      "level": "w:all",
+      "no_journal_avg_ms": 3.669,
+      "journal_avg_ms": 4.56,
+      "added_latency_ms": 0.891,
+      "percentage_increase": 24.3
+    }
+  ]
+}

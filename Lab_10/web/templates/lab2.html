@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Lab 10.2 – Inventory Reservation</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+<style>
+  body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',system-ui,sans-serif;}
+  .navbar{background:#00684A!important;}
+  .card{background:#161b22;border:1px solid #30363d;}
+  .card-header{background:#1f2937;border-bottom:1px solid #30363d;}
+  .table{color:#e6edf3;}.table td,.table th{border-color:#30363d;}
+  .alert-success-dark{background:#0a3a2a;border:1px solid #00684A;color:#00ED64;}
+  .alert-danger-dark{background:#3a0a0a;border:1px solid #da3633;color:#ff7b72;}
+  .alert-info-dark{background:#0a2a3a;border:1px solid #1f6feb;color:#79c0ff;}
+  .log-area{background:#0d1117;border:1px solid #30363d;border-radius:6px;font-family:monospace;font-size:.8rem;max-height:220px;overflow-y:auto;padding:10px;}
+  .result-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.75rem;margin:2px;}
+  .pill-ok{background:#0a3a2a;color:#00ED64;border:1px solid #00684A;}
+  .pill-fail{background:#3a0a0a;color:#ff7b72;border:1px solid #da3633;}
+  .spinner-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;}
+  .stock-bar{height:12px;border-radius:6px;background:#30363d;overflow:hidden;}
+  .stock-fill{height:100%;background:linear-gradient(90deg,#00684A,#00ED64);transition:width .4s;}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-dark navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/"><i class="bi bi-arrow-left me-2"></i>NoSQL Lab 10</a>
+    <span class="navbar-text fw-semibold"><i class="bi bi-box-seam me-2"></i>Lab 10.2 – Inventory Reservation</span>
+  </div>
+</nav>
+
+<div class="spinner-overlay" id="spinner"><div class="spinner-border text-warning" style="width:3rem;height:3rem;"></div></div>
+
+<div class="container my-4">
+  <div class="row g-4">
+
+    <!-- Inventory panel -->
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><i class="bi bi-boxes me-2"></i>Inventory</h6>
+          <button class="btn btn-sm btn-outline-warning" onclick="seedProducts()"><i class="bi bi-arrow-counterclockwise me-1"></i>Re-seed</button>
+        </div>
+        <div class="card-body" id="productsPanel">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Reserve form -->
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header"><h6 class="mb-0"><i class="bi bi-cart-plus me-2"></i>Single Reservation</h6></div>
+        <div class="card-body">
+          <div id="reserveResult" class="mb-3" style="display:none;"></div>
+          <div class="mb-3">
+            <label class="form-label text-secondary small">Product</label>
+            <select class="form-select bg-dark text-light border-secondary" id="productId">
+              <option value="LAPTOP-PRO">LAPTOP-PRO – UltraBook Pro ($999.99)</option>
+              <option value="HEADPHONES">HEADPHONES – Studio Headset ($149.99)</option>
+              <option value="WEBCAM-HD">WEBCAM-HD – HD Webcam Pro ($79.99)</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-secondary small">Customer ID</label>
+            <input type="text" class="form-control bg-dark text-light border-secondary" id="custId" value="CUST-001"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-secondary small">Quantity</label>
+            <input type="number" class="form-control bg-dark text-light border-secondary" id="qty" value="1" min="1"/>
+          </div>
+          <button class="btn btn-warning w-100 text-dark" onclick="doReserve()"><i class="bi bi-cart-check me-2"></i>Reserve</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Concurrency test -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header"><h6 class="mb-0"><i class="bi bi-lightning-charge-fill me-2"></i>Concurrent Reservation Test (Lab 10.2 Activity)</h6></div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end mb-3">
+            <div class="col-md-3">
+              <label class="form-label text-secondary small">Threads</label>
+              <select class="form-select bg-dark text-light border-secondary" id="nThreads">
+                <option value="4">4</option>
+                <option value="8" selected>8 (default)</option>
+                <option value="10">10</option>
+                <option value="16">16</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-secondary small">Initial Stock</label>
+              <input type="number" class="form-control bg-dark text-light border-secondary" id="testStock" value="5" min="1"/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-secondary small">Product</label>
+              <select class="form-select bg-dark text-light border-secondary" id="testProduct">
+                <option value="LAPTOP-PRO">LAPTOP-PRO</option>
+                <option value="HEADPHONES">HEADPHONES</option>
+                <option value="WEBCAM-HD">WEBCAM-HD</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-warning w-100 text-dark" onclick="doConcurrentTest()"><i class="bi bi-play-fill me-2"></i>Run Test</button>
+            </div>
+          </div>
+          <div id="concurrentResult" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders table -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><i class="bi bi-receipt me-2"></i>Recent Orders</h6>
+          <button class="btn btn-sm btn-outline-secondary" onclick="loadOrders()"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Order ID</th><th>Customer</th><th>Product</th><th class="text-end">Qty</th><th class="text-end">Total</th><th>Status</th><th>Time</th></tr></thead>
+            <tbody id="ordersBody"><tr><td colspan="7" class="text-center text-secondary p-3">No orders yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Concept card -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header"><h6 class="mb-0"><i class="bi bi-code-slash me-2"></i>How it works – Lab 10.2</h6></div>
+        <div class="card-body">
+          <div class="log-area">
+# Optimistic concurrency: version field prevents lost updates
+item = db.products.find_one({"product_id": pid}, session=session)
+result = db.products.update_one(
+    {"product_id": pid, "version": item["version"]},  # CAS check
+    {"$inc": {"stock": -qty, "version": 1}},
+    session=session
+)
+if result.matched_count == 0:
+    raise WriteConflict("Version mismatch – retry")   # → retry loop
+
+# Retry with exponential back-off on WriteConflict
+for attempt in range(MAX_RETRIES):       # up to 5 attempts
+    try:
+        with session.start_transaction(...):
+            _do_reserve(...)              # may raise WriteConflict
+        return success
+    except WriteConflict:
+        time.sleep(0.05 * 2**attempt)    # 50ms, 100ms, 200ms, 400ms…
+
+# Throughput sweep: 1→4→8→16 threads, measure TPS
+with ThreadPoolExecutor(max_workers=N) as pool:
+    futures = [pool.submit(reserve_inventory, ...) for _ in range(N)]
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function show(id,html,cls){const el=document.getElementById(id);el.style.display='';el.className='p-3 rounded mb-3 '+cls;el.innerHTML=html;}
+function spin(on){document.getElementById('spinner').style.display=on?'flex':'none';}
+
+function renderProducts(data){
+  const p=document.getElementById('productsPanel');
+  if(!data.length){p.innerHTML='<p class="text-secondary">No products – click Re-seed</p>';return;}
+  p.innerHTML=data.map(pr=>{
+    const maxStock=20;
+    const pct=Math.min(100,Math.round(pr.stock/maxStock*100));
+    return `<div class="mb-3">
+      <div class="d-flex justify-content-between mb-1">
+        <span class="fw-semibold">${pr.name}</span>
+        <span class="text-secondary small">${pr.product_id}</span>
+      </div>
+      <div class="d-flex justify-content-between mb-1">
+        <span class="text-success fw-bold">$${Number(pr.price).toFixed(2)}</span>
+        <span class="${pr.stock===0?'text-danger':pr.stock<=2?'text-warning':'text-success'} fw-bold">${pr.stock} in stock</span>
+      </div>
+      <div class="stock-bar"><div class="stock-fill" style="width:${pct}%"></div></div>
+      <div class="text-secondary small mt-1">Version: ${pr.version}</div>
+    </div>`;
+  }).join('<hr style="border-color:#30363d"/>');
+}
+
+function renderOrders(data){
+  const tb=document.getElementById('ordersBody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="7" class="text-center text-secondary p-3">No orders yet</td></tr>';return;}
+  tb.innerHTML=data.map(o=>`<tr>
+    <td class="font-monospace text-secondary small">${(o.order_id||'').substring(0,8)}…</td>
+    <td>${o.customer_id}</td>
+    <td>${o.items?.[0]?.product_id||'-'}</td>
+    <td class="text-end">${o.items?.[0]?.qty||1}</td>
+    <td class="text-end text-success">$${Number(o.total).toFixed(2)}</td>
+    <td><span class="badge bg-warning text-dark">${o.status}</span></td>
+    <td class="text-secondary small">${new Date((o.created_at||0)*1000).toLocaleTimeString()}</td>
+  </tr>`).join('');
+}
+
+async function loadProducts(){const r=await fetch('/api/products');renderProducts(await r.json());}
+async function loadOrders(){const r=await fetch('/api/orders');renderOrders(await r.json());}
+
+async function seedProducts(){
+  spin(true);
+  await fetch('/api/products/seed',{method:'POST'});
+  await Promise.all([loadProducts(),loadOrders()]);
+  spin(false);
+  show('reserveResult','<i class="bi bi-check-circle me-2"></i>Inventory re-seeded!','alert-success-dark');
+}
+
+async function doReserve(){
+  spin(true);
+  const body={product_id:document.getElementById('productId').value,customer_id:document.getElementById('custId').value,qty:document.getElementById('qty').value};
+  const r=await fetch('/api/reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  renderProducts(d.products||[]);renderOrders(d.orders||[]);
+  show('reserveResult',`<i class="bi bi-${d.ok?'check-circle':'x-circle'} me-2"></i>${d.msg}`,d.ok?'alert-success-dark':'alert-danger-dark');
+  spin(false);
+}
+
+async function doConcurrentTest(){
+  spin(true);
+  const body={threads:document.getElementById('nThreads').value,stock:document.getElementById('testStock').value,product_id:document.getElementById('testProduct').value};
+  const r=await fetch('/api/concurrent-test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  renderProducts(d.products||[]);renderOrders(d.orders||[]);
+
+  const pills=d.results.map(res=>`<span class="result-pill ${res.ok?'pill-ok':'pill-fail'}">${res.msg.split(' ')[0]}</span>`).join('');
+  const html=`
+    <div class="row g-3 text-center mb-3">
+      <div class="col"><div class="card p-2"><div class="fs-4 fw-bold text-success">${d.successes}</div><div class="text-secondary small">Succeeded</div></div></div>
+      <div class="col"><div class="card p-2"><div class="fs-4 fw-bold text-danger">${d.failures}</div><div class="text-secondary small">Failed</div></div></div>
+      <div class="col"><div class="card p-2"><div class="fs-4 fw-bold text-warning">${d.elapsed_s}s</div><div class="text-secondary small">Elapsed</div></div></div>
+      <div class="col"><div class="card p-2"><div class="fs-4 fw-bold text-info">${d.throughput}</div><div class="text-secondary small">TPS</div></div></div>
+    </div>
+    <div class="mb-2">${pills}</div>
+  `;
+  show('concurrentResult',html,'alert-info-dark');
+  spin(false);
+}
+
+loadProducts();loadOrders();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
