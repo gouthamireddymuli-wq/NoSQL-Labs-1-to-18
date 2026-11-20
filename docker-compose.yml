@@ -1,0 +1,104 @@
+version: "3.9"
+
+services:
+  # ── MongoDB replica set (reuses Lab 13 nodes if already running) ──────────
+  mongo-rs0-1:
+    image: mongo:7
+    container_name: lab14-mongo-1
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    command: >
+      bash -c "
+        cp /etc/mongodb-keyfile /tmp/keyfile &&
+        chmod 400 /tmp/keyfile &&
+        chown mongodb:mongodb /tmp/keyfile &&
+        mongod --replSet rs0 --bind_ip_all --auth
+               --keyFile /tmp/keyfile --port 27017
+      "
+    volumes:
+      - mongo1_data:/data/db
+      - ./keyfile:/etc/mongodb-keyfile:ro
+    networks:
+      - lab14_net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval",
+             "db.adminCommand({ping:1})",
+             "mongodb://admin:AdminPass123!@localhost:27017/admin?authSource=admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mongo-rs0-2:
+    image: mongo:7
+    container_name: lab14-mongo-2
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    command: >
+      bash -c "
+        cp /etc/mongodb-keyfile /tmp/keyfile &&
+        chmod 400 /tmp/keyfile &&
+        chown mongodb:mongodb /tmp/keyfile &&
+        mongod --replSet rs0 --bind_ip_all --auth
+               --keyFile /tmp/keyfile --port 27017
+      "
+    volumes:
+      - mongo2_data:/data/db
+      - ./keyfile:/etc/mongodb-keyfile:ro
+    networks:
+      - lab14_net
+
+  mongo-rs0-3:
+    image: mongo:7
+    container_name: lab14-mongo-3
+    restart: unless-stopped
+    ports:
+      - "27019:27017"
+    command: >
+      bash -c "
+        cp /etc/mongodb-keyfile /tmp/keyfile &&
+        chmod 400 /tmp/keyfile &&
+        chown mongodb:mongodb /tmp/keyfile &&
+        mongod --replSet rs0 --bind_ip_all --auth
+               --keyFile /tmp/keyfile --port 27017
+      "
+    volumes:
+      - mongo3_data:/data/db
+      - ./keyfile:/etc/mongodb-keyfile:ro
+    networks:
+      - lab14_net
+
+  # ── Lab 14 Web Application ────────────────────────────────────────────────
+  web:
+    image: gouthudocker/nosql-lab14:latest
+    container_name: nosql_lab14_web
+    restart: unless-stopped
+    ports:
+      - "5004:5000"
+    environment:
+      PORT: "5000"
+      MONGO_URI: "mongodb://admin:AdminPass123!@mongo-rs0-1:27017,mongo-rs0-2:27017,mongo-rs0-3:27017/admin?replicaSet=rs0&authSource=admin"
+      MONGO_URI_STANDALONE: "mongodb://admin:AdminPass123!@mongo-rs0-1:27017/?authSource=admin"
+    volumes:
+      - lab14_logs:/app/logs
+      - lab14_backups:/app/backups
+    networks:
+      - lab14_net
+      - nosqllab13_default   # attach to lab13 network so it can reach existing mongo nodes
+    depends_on:
+      - mongo-rs0-1
+
+networks:
+  lab14_net:
+    driver: bridge
+  nosqllab13_default:
+    external: true
+
+volumes:
+  mongo1_data:
+  mongo2_data:
+  mongo3_data:
+  lab14_logs:
+  lab14_backups:

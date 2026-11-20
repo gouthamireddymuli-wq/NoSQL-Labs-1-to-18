@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% block title %}Lab 14.1 – Monitoring Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .metric-row td { vertical-align: middle; }
+  .spark { width: 100%; height: 8px; border-radius: 4px; background: #e2e8f0; }
+  .spark-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
+  .alert-row { background: rgba(239,68,68,.07); }
+  #alertBox { display: none; }
+  .ts-label { font-size:.78rem; color:#94a3b8; }
+  .ops-num { font-size:1.3rem; font-weight:700; }
+  .live-dot { width:10px; height:10px; border-radius:50%; background:#22c55e; display:inline-block; animation:blink 1.2s infinite; }
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .conn-gauge { height:14px; border-radius:7px; overflow:hidden; background:#e2e8f0; }
+  .conn-fill { height:100%; border-radius:7px; transition:width .6s ease; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero-banner">
+  <h2 class="mb-1 fw-bold">
+    <i class="fa-solid fa-chart-line me-2 text-success"></i>
+    Activity 1: MongoDB Monitoring Dashboard
+  </h2>
+  <p class="mb-0 text-white-50">
+    Real-time <code>serverStatus</code> polling · WiredTiger cache · Op counters · Threshold alerts
+    <span class="ms-3"><span class="live-dot"></span> <span id="streamStatus">Connecting…</span></span>
+  </p>
+</div>
+
+<!-- Alert box -->
+<div id="alertBox" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+  <i class="fa-solid fa-triangle-exclamation me-2"></i>
+  <strong>Threshold Alert!</strong>
+  <ul id="alertList" class="mb-0 mt-1"></ul>
+</div>
+
+<!-- Top KPI cards -->
+<div class="row g-3 mb-4" id="kpiRow">
+  <div class="col-6 col-md-3">
+    <div class="card card-custom p-3 text-center">
+      <div class="text-muted small">Current Connections</div>
+      <div class="ops-num text-success" id="kpi-conn">—</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-custom p-3 text-center">
+      <div class="text-muted small">Cache Usage</div>
+      <div class="ops-num text-info" id="kpi-cache">—</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-custom p-3 text-center">
+      <div class="text-muted small">Total Inserts</div>
+      <div class="ops-num text-warning" id="kpi-insert">—</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-custom p-3 text-center">
+      <div class="text-muted small">Total Queries</div>
+      <div class="ops-num text-primary" id="kpi-query">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Connections panel -->
+  <div class="col-md-6">
+    <div class="card card-custom h-100">
+      <div class="card-body p-4">
+        <h5 class="mb-3"><i class="fa-solid fa-plug text-success me-2"></i>Connections</h5>
+        <table class="table table-sm mb-3">
+          <tbody id="connTable">
+            <tr><td class="text-muted">Current</td><td id="conn-current">—</td></tr>
+            <tr><td class="text-muted">Available</td><td id="conn-available">—</td></tr>
+            <tr><td class="text-muted">Total Created</td><td id="conn-created">—</td></tr>
+          </tbody>
+        </table>
+        <div class="mb-1 d-flex justify-content-between small">
+          <span>Connection utilisation</span>
+          <span id="conn-pct-label">—</span>
+        </div>
+        <div class="conn-gauge">
+          <div class="conn-fill bg-success" id="conn-bar" style="width:0%"></div>
+        </div>
+        <div class="mt-3">
+          <div class="text-muted small mb-1">Threshold: alert when &gt;80% of max connections used</div>
+          <div class="text-muted small">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            For a lab instance 50 connections is "high"; a 1,000-node production cluster
+            might set alerts only above 5,000 — context determines the threshold.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WiredTiger cache panel -->
+  <div class="col-md-6">
+    <div class="card card-custom h-100">
+      <div class="card-body p-4">
+        <h5 class="mb-3"><i class="fa-solid fa-memory text-info me-2"></i>WiredTiger Cache</h5>
+        <table class="table table-sm mb-3">
+          <tbody>
+            <tr><td class="text-muted">In Use</td><td id="cache-used">—</td></tr>
+            <tr><td class="text-muted">Maximum</td><td id="cache-max">—</td></tr>
+            <tr><td class="text-muted">Dirty Bytes</td><td id="cache-dirty">—</td></tr>
+            <tr><td class="text-muted">Pages Read</td><td id="cache-pages">—</td></tr>
+          </tbody>
+        </table>
+        <div class="mb-1 d-flex justify-content-between small">
+          <span>Cache fill</span>
+          <span id="cache-pct-label">—</span>
+        </div>
+        <div class="spark mb-2">
+          <div class="spark-fill" id="cache-bar" style="width:0%;background:#0ea5e9"></div>
+        </div>
+        <div class="text-muted small">
+          <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>
+          Alert fires when cache &gt;80% — eviction pressure increases I/O latency.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Op counters -->
+  <div class="col-md-6">
+    <div class="card card-custom h-100">
+      <div class="card-body p-4">
+        <h5 class="mb-3"><i class="fa-solid fa-bolt text-warning me-2"></i>Operation Counters (cumulative since startup)</h5>
+        <table class="table table-bordered table-sm text-center">
+          <thead class="table-dark">
+            <tr><th>Insert</th><th>Query</th><th>Update</th><th>Delete</th><th>Getmore</th><th>Command</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td id="op-insert">—</td>
+              <td id="op-query">—</td>
+              <td id="op-update">—</td>
+              <td id="op-delete">—</td>
+              <td id="op-getmore">—</td>
+              <td id="op-command">—</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="text-muted small mt-2">
+          These counters accumulate from server start. For <em>rate</em> monitoring, subtract
+          successive readings and divide by the interval — this is what Atlas, Prometheus, and
+          Datadog do under the hood.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Replication / uptime panel -->
+  <div class="col-md-6">
+    <div class="card card-custom h-100">
+      <div class="card-body p-4">
+        <h5 class="mb-3"><i class="fa-solid fa-rotate text-primary me-2"></i>Replication &amp; Server Info</h5>
+        <table class="table table-sm">
+          <tbody>
+            <tr><td class="text-muted">Host</td><td id="info-host">—</td></tr>
+            <tr><td class="text-muted">Version</td><td id="info-ver">—</td></tr>
+            <tr><td class="text-muted">Uptime</td><td id="info-uptime">—</td></tr>
+            <tr><td class="text-muted">Repl Lag</td><td id="info-lag">—</td></tr>
+          </tbody>
+        </table>
+        <div class="text-muted small mt-2">
+          <i class="fa-solid fa-circle-info me-1 text-info"></i>
+          Replication lag &gt;10 s triggers an alert. On a healthy replica set with
+          low write volume you should see &lt;1 s lag.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Log file tail -->
+<div class="card card-custom mt-4">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="mb-0"><i class="fa-solid fa-file-lines text-secondary me-2"></i>Metrics Log (last 50 entries)</h5>
+      <button class="btn btn-sm btn-outline-secondary" onclick="loadLog()">
+        <i class="fa-solid fa-rotate me-1"></i>Refresh
+      </button>
+    </div>
+    <div class="log-console" id="logConsole">Loading…</div>
+  </div>
+</div>
+
+<div class="text-muted small mt-3 ts-label text-end">
+  Last snapshot: <span id="lastTs">—</span> &nbsp;|&nbsp; Polling every 3 s via SSE
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function fmt(n){ return typeof n === 'number' ? n.toLocaleString() : n; }
+function fmtBytes(b){
+  if(b >= 1073741824) return (b/1073741824).toFixed(2)+' GB';
+  if(b >= 1048576)    return (b/1048576).toFixed(2)+' MB';
+  if(b >= 1024)       return (b/1024).toFixed(2)+' KB';
+  return b+' B';
+}
+function fmtUptime(s){
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  return `${h}h ${m}m ${sec}s`;
+}
+
+function applyMetrics(m){
+  // KPIs
+  document.getElementById('kpi-conn').textContent   = fmt(m.connections_current);
+  document.getElementById('kpi-cache').textContent  = m.cache_pct.toFixed(1) + '%';
+  document.getElementById('kpi-insert').textContent = fmt(m.op_insert);
+  document.getElementById('kpi-query').textContent  = fmt(m.op_query);
+
+  // Connections
+  document.getElementById('conn-current').textContent   = fmt(m.connections_current);
+  document.getElementById('conn-available').textContent = fmt(m.connections_available);
+  document.getElementById('conn-created').textContent   = fmt(m.connections_total_created);
+  const connTotal = m.connections_current + m.connections_available;
+  const connPct   = connTotal > 0 ? (m.connections_current / connTotal * 100).toFixed(1) : 0;
+  document.getElementById('conn-pct-label').textContent = connPct + '%';
+  const bar = document.getElementById('conn-bar');
+  bar.style.width   = Math.min(connPct, 100) + '%';
+  bar.className     = 'conn-fill ' + (connPct > 80 ? 'bg-danger' : connPct > 60 ? 'bg-warning' : 'bg-success');
+
+  // Cache
+  document.getElementById('cache-used').textContent  = fmtBytes(m.cache_bytes_in_use);
+  document.getElementById('cache-max').textContent   = fmtBytes(m.cache_max_bytes);
+  document.getElementById('cache-dirty').textContent = fmtBytes(m.cache_dirty_bytes);
+  document.getElementById('cache-pages').textContent = fmt(m.pages_read_into_cache);
+  document.getElementById('cache-pct-label').textContent = m.cache_pct.toFixed(1) + '%';
+  const cbar = document.getElementById('cache-bar');
+  cbar.style.width = Math.min(m.cache_pct, 100) + '%';
+  cbar.style.background = m.cache_pct > 80 ? '#ef4444' : m.cache_pct > 60 ? '#f59e0b' : '#0ea5e9';
+
+  // Ops
+  document.getElementById('op-insert').textContent  = fmt(m.op_insert);
+  document.getElementById('op-query').textContent   = fmt(m.op_query);
+  document.getElementById('op-update').textContent  = fmt(m.op_update);
+  document.getElementById('op-delete').textContent  = fmt(m.op_delete);
+  document.getElementById('op-getmore').textContent = fmt(m.op_getmore);
+  document.getElementById('op-command').textContent = fmt(m.op_command);
+
+  // Info
+  document.getElementById('info-host').textContent   = m.host;
+  document.getElementById('info-ver').textContent    = m.version;
+  document.getElementById('info-uptime').textContent = fmtUptime(m.uptime_seconds);
+  const lag = m.repl_lag_ms;
+  document.getElementById('info-lag').textContent = lag === null ? 'Standalone' : lag + ' ms';
+
+  // Alerts
+  const box   = document.getElementById('alertBox');
+  const list  = document.getElementById('alertList');
+  if(m.alerts && m.alerts.length){
+    list.innerHTML = m.alerts.map(a => `<li>${a}</li>`).join('');
+    box.style.display = '';
+  } else {
+    box.style.display = 'none';
+  }
+
+  document.getElementById('lastTs').textContent = new Date(m.timestamp).toLocaleTimeString();
+}
+
+// SSE stream
+function startStream(){
+  const es = new EventSource('/api/metrics/stream');
+  document.getElementById('streamStatus').textContent = 'Live';
+  es.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if(m.done){ es.close(); document.getElementById('streamStatus').textContent = 'Stream ended (60 s)'; return; }
+    if(m.error){ console.warn('metrics error', m.error); return; }
+    applyMetrics(m);
+  };
+  es.onerror = () => {
+    document.getElementById('streamStatus').textContent = 'Reconnecting…';
+    es.close();
+    setTimeout(startStream, 5000);
+  };
+}
+
+function loadLog(){
+  fetch('/api/backup/logs')
+    .then(r=>r.json())
+    .then(d=>{
+      const el = document.getElementById('logConsole');
+      el.textContent = d.lines.join('\n') || '(no entries yet)';
+      el.scrollTop = el.scrollHeight;
+    });
+}
+
+startStream();
+loadLog();
+setInterval(loadLog, 10000);
+</script>
+{% endblock %}
