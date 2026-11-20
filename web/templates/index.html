@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | NoSQL Lab 18 - Comparative Capstone{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Hero Banner -->
+  <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 p-6 sm:p-8">
+    <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div class="space-y-2 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+          <i class="fa-solid fa-layer-group"></i> Multi-Database Comparative Synthesis
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          Fraud Detection Data Platform Capstone
+        </h1>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Real-world architectural benchmark evaluating <strong>MongoDB</strong> (document store), <strong>Apache Cassandra</strong> (wide-column store), and <strong>Neo4j</strong> (graph database) across realistic fraud investigation access patterns.
+        </p>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex flex-wrap sm:flex-nowrap gap-3">
+        <a href="/benchmark" class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid fa-play"></i> Run Benchmark
+        </a>
+        <a href="/report" class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-sm border border-slate-700 transition">
+          <i class="fa-solid fa-file-lines"></i> View Report
+        </a>
+      </div>
+    </div>
+
+    <!-- Docker Verification Callout -->
+    <div class="mt-6 pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2 text-slate-300">
+        <span class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono font-semibold">DOCKER HUB</span>
+        <code class="text-cyan-300 font-mono select-all">docker pull gouthudocker/nosql-lab18:latest</code>
+      </div>
+      <div class="text-slate-400">
+        Student: <span class="text-slate-200 font-medium">M Gouthami</span> | USN: <span class="text-slate-200 font-mono">24BTRCL130</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metrics Row -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Total Transactions -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Transactions</span>
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+          <i class="fa-solid fa-receipt"></i>
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span id="metricTotalTxns" class="text-2xl font-bold text-white">--</span>
+        <span class="text-xs text-slate-400">records</span>
+      </div>
+      <div class="mt-1 text-xs text-slate-400 flex items-center gap-1">
+        <i class="fa-solid fa-database text-emerald-400"></i> capstone.transactions
+      </div>
+    </div>
+
+    <!-- High Risk Transactions -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">High Risk (&gt;0.8)</span>
+        <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span id="metricHighRisk" class="text-2xl font-bold text-amber-400">--</span>
+        <span class="text-xs text-slate-400">flagged</span>
+      </div>
+      <div class="mt-1 text-xs text-slate-400 flex items-center gap-1">
+        <i class="fa-solid fa-filter text-amber-400"></i> Index-accelerated range scan
+      </div>
+    </div>
+
+    <!-- Fraud Confirmed -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Known Fraud (~2%)</span>
+        <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+          <i class="fa-solid fa-shield-virus"></i>
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span id="metricFraudCount" class="text-2xl font-bold text-rose-400">--</span>
+        <span class="text-xs text-slate-400">cases</span>
+      </div>
+      <div class="mt-1 text-xs text-slate-400 flex items-center gap-1">
+        <i class="fa-solid fa-circle-exclamation text-rose-400"></i> Ground truth labels
+      </div>
+    </div>
+
+    <!-- Spend Categories -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Spend Categories</span>
+        <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+          <i class="fa-solid fa-chart-column"></i>
+        </div>
+      </div>
+      <div class="mt-3 flex items-baseline gap-2">
+        <span id="metricCategories" class="text-2xl font-bold text-cyan-400">--</span>
+        <span class="text-xs text-slate-400">domains</span>
+      </div>
+      <div class="mt-1 text-xs text-slate-400 flex items-center gap-1">
+        <i class="fa-solid fa-chart-pie text-cyan-400"></i> Group aggregation pipeline
+      </div>
+    </div>
+  </div>
+
+  <!-- Architecture & Polyglot Persistence Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Visual Architecture -->
+    <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-network-wired text-emerald-400"></i> Proposed Polyglot Architecture
+          </h2>
+          <p class="text-xs text-slate-400">Optimal separation of operational storage and relationship graph</p>
+        </div>
+        <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+          Ch. 16 Synthesis
+        </span>
+      </div>
+
+      <!-- Architecture SVG Diagram -->
+      <div class="bg-slate-950 rounded-xl p-4 border border-slate-800/80">
+        <svg viewBox="0 0 620 270" class="w-full h-auto text-slate-200">
+          <defs>
+            <linearGradient id="gClient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#3b82f6" />
+              <stop offset="100%" stop-color="#1d4ed8" />
+            </linearGradient>
+            <linearGradient id="gMongo" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00ED64" />
+              <stop offset="100%" stop-color="#00684A" />
+            </linearGradient>
+            <linearGradient id="gNeo" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#38bdf8" />
+              <stop offset="100%" stop-color="#0284c7" />
+            </linearGradient>
+            <linearGradient id="gCass" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#64748b" />
+              <stop offset="100%" stop-color="#334155" />
+            </linearGradient>
+            <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 8 5 L 0 9 z" fill="#94a3b8" />
+            </marker>
+          </defs>
+
+          <!-- Client App / Fraud Review UI -->
+          <rect x="190" y="15" width="240" height="50" rx="8" fill="url(#gClient)" opacity="0.95" />
+          <text x="310" y="38" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="bold">Application / Fraud Review UI</text>
+          <text x="310" y="54" text-anchor="middle" fill="#bfdbfe" font-size="10">Web API • Analyst Dashboard • Rule Engine</text>
+
+          <!-- Connectors -->
+          <!-- Left to MongoDB -->
+          <path d="M 270 65 L 270 105 L 140 105 L 140 135" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)" />
+          <text x="140" y="125" text-anchor="middle" fill="#a7f3d0" font-size="9" font-weight="bold">CRUD • Indexes • Aggregation</text>
+
+          <!-- Right to Neo4j -->
+          <path d="M 350 65 L 350 105 L 480 105 L 480 135" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)" />
+          <text x="480" y="125" text-anchor="middle" fill="#bae6fd" font-size="9" font-weight="bold">Graph Traversal • Rings</text>
+
+          <!-- MongoDB Box -->
+          <rect x="35" y="140" width="210" height="105" rx="8" fill="#00684A" stroke="#00ED64" stroke-width="1.5" />
+          <text x="140" y="165" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="bold">MongoDB (Operational)</text>
+          <text x="140" y="185" text-anchor="middle" fill="#a7f3d0" font-size="10">• Transactions Storage</text>
+          <text x="140" y="202" text-anchor="middle" fill="#a7f3d0" font-size="10">• Fast Point Lookups &amp; Range Scans</text>
+          <text x="140" y="219" text-anchor="middle" fill="#a7f3d0" font-size="10">• Native Aggregation Framework</text>
+          <text x="140" y="235" text-anchor="middle" fill="#86efac" font-size="9" font-weight="bold">[Primary Engine: MEASURED]</text>
+
+          <!-- Neo4j Box -->
+          <rect x="375" y="140" width="210" height="105" rx="8" fill="#0369a1" stroke="#38bdf8" stroke-width="1.5" />
+          <text x="480" y="165" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="bold">Neo4j (Graph Engine)</text>
+          <text x="480" y="185" text-anchor="middle" fill="#bae6fd" font-size="10">• Device &amp; Account Identity Graph</text>
+          <text x="480" y="202" text-anchor="middle" fill="#bae6fd" font-size="10">• SHARES_DEVICE Fraud Ring Walk</text>
+          <text x="480" y="219" text-anchor="middle" fill="#bae6fd" font-size="10">• Index-Free Adjacency Traversal</text>
+          <text x="480" y="235" text-anchor="middle" fill="#7dd3fc" font-size="9" font-weight="bold">[Target Polyglot: ESTIMATED]</text>
+        </svg>
+      </div>
+
+      <!-- Note on Cassandra Exclusion -->
+      <div class="mt-4 p-3.5 rounded-lg bg-slate-950/80 border border-slate-800 text-xs text-slate-300">
+        <div class="flex items-start gap-2">
+          <i class="fa-solid fa-circle-exclamation text-amber-400 mt-0.5"></i>
+          <div>
+            <strong class="text-amber-300">Why Apache Cassandra is excluded from this architecture:</strong>
+            While Cassandra provides unmatched linear write throughput, it requires access patterns to be rigidly hardcoded into partition keys. It cannot perform ad-hoc risk range scans without costly full-cluster table filtering (<code class="text-amber-200">ALLOW FILTERING</code>) and has no native aggregation engine without standing up an auxiliary Apache Spark cluster.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparative Decision Matrix -->
+    <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-scale-balanced text-cyan-400"></i> Architectural Scorecard
+          </h2>
+          <span class="text-xs text-slate-400">At a glance</span>
+        </div>
+        <div class="space-y-3 text-xs">
+          <!-- Point Lookup -->
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
+            <div class="flex items-center justify-between font-semibold text-slate-200 mb-1">
+              <span>1. User History Lookup</span>
+              <span class="text-emerald-400 font-mono">Cassandra &gt; Mongo &gt; Neo4j</span>
+            </div>
+            <p class="text-slate-400">Cassandra excels when user_id is the partition key (~2-5ms). MongoDB is virtually identical with index scan (~14ms). Neo4j traverses relationships (~5-15ms).</p>
+          </div>
+
+          <!-- Range Query -->
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
+            <div class="flex items-center justify-between font-semibold text-slate-200 mb-1">
+              <span>2. Risk Range Filter</span>
+              <span class="text-emerald-400 font-mono">Mongo &gt; Neo4j &gt;&gt; Cassandra</span>
+            </div>
+            <p class="text-slate-400">MongoDB's B-Tree index scan on risk_score is optimal (~15ms). Cassandra requires secondary indexes or multi-node broadcast filtering (50-200+ ms).</p>
+          </div>
+
+          <!-- Aggregations -->
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
+            <div class="flex items-center justify-between font-semibold text-slate-200 mb-1">
+              <span>3. Category Analytics</span>
+              <span class="text-emerald-400 font-mono">Mongo &gt;&gt; Neo4j &gt;&gt; Cassandra</span>
+            </div>
+            <p class="text-slate-400">MongoDB native aggregation framework groups in-memory (~10-15ms). Neo4j is inefficient for whole-graph sums. Cassandra requires external Spark.</p>
+          </div>
+
+          <!-- Fraud Rings -->
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
+            <div class="flex items-center justify-between font-semibold text-slate-200 mb-1">
+              <span>4. Fraud Ring Traversal</span>
+              <span class="text-cyan-400 font-mono">Neo4j &gt;&gt;&gt; Mongo &gt;&gt;&gt; Cassandra</span>
+            </div>
+            <p class="text-slate-400">Neo4j's index-free adjacency traverses shared-device hops in constant time per edge. MongoDB requires multiple joins or $graphLookup; Cassandra cannot do this natively.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+        <span class="text-slate-400">Ready to test live performance?</span>
+        <a href="/benchmark" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
+          Go to Benchmark Suite <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-world Fraud Workload Context -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+    <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+      <i class="fa-solid fa-lightbulb text-amber-400"></i> Why Fraud Detection Stresses Database Architectures
+    </h3>
+    <p class="text-sm text-slate-300 leading-relaxed">
+      A fraud detection platform cannot rely on one single database optimization because it confronts <strong>four contradictory access patterns</strong> concurrently:
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 text-xs">
+      <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+        <div class="font-bold text-emerald-400 mb-1">Point Lookups</div>
+        <div class="text-slate-400">Fast checkout authorization retrieving a single customer's last 50 transactions to verify velocity.</div>
+      </div>
+      <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+        <div class="font-bold text-amber-400 mb-1">Attribute Filtering</div>
+        <div class="text-slate-400">Fraud investigators filtering transactions with risk score &gt; 0.8 across multiple dimensions and merchants.</div>
+      </div>
+      <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+        <div class="font-bold text-cyan-400 mb-1">Analytical Aggregations</div>
+        <div class="text-slate-400">Real-time category spending totals to detect macro shifts and merchant compromise anomalies.</div>
+      </div>
+      <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+        <div class="font-bold text-purple-400 mb-1">Relationship Traversal</div>
+        <div class="text-slate-400">Uncovering synthetic identity theft rings where dozens of accounts share the same physical mobile devices.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  async function loadStats() {
+    try {
+      const res = await fetch('/api/stats');
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('metricTotalTxns').textContent = data.total_transactions.toLocaleString();
+        document.getElementById('metricHighRisk').textContent = data.high_risk_count.toLocaleString();
+        document.getElementById('metricFraudCount').textContent = data.fraud_count.toLocaleString();
+        document.getElementById('metricCategories').textContent = data.categories_count;
+      }
+    } catch (e) {
+      console.warn("Could not load stats:", e);
+    }
+  }
+  document.addEventListener('DOMContentLoaded', loadStats);
+</script>
+{% endblock %}
