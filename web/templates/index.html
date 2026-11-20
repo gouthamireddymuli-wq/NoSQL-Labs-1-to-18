@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - NoSQL Lab 13 Production Deployment{% endblock %}
+
+{% block content %}
+<div class="hero-banner">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1 class="display-6 fw-bold mb-2">
+                <i class="fa-solid fa-cubes me-2 text-warning"></i> Production Deployment & Orchestration
+            </h1>
+            <p class="lead mb-0 text-light opacity-90">
+                Chapter 13: Enterprise Replica Sets with Keyfile Authentication, Kubernetes StatefulSets, and Terraform MongoDB Atlas Cloud Infrastructure.
+            </p>
+        </div>
+        <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+            <span class="badge bg-light text-dark px-3 py-2 fs-6 shadow-sm">
+                <i class="fa-solid fa-clock me-1 text-primary"></i> {{ now }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Status Grid -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card card-custom h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted text-uppercase fw-bold small">Cluster Status</span>
+                <span class="badge {% if status.ok == 1 %}bg-success{% else %}bg-danger{% endif %} px-2 py-1">
+                    {% if status.ok == 1 %}ONLINE (rs0){% else %}OFFLINE{% endif %}
+                </span>
+            </div>
+            <h3 class="fw-bold mb-1">
+                {% if status.ok == 1 %}3 Active Nodes{% else %}Cluster Standby{% endif %}
+            </h3>
+            <p class="text-muted small mb-0">
+                Primary-Secondary-Arbiter architecture with automated failover and election.
+            </p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted text-uppercase fw-bold small">Keyfile Authentication</span>
+                <span class="badge bg-success px-2 py-1">ENFORCED</span>
+            </div>
+            <h3 class="fw-bold mb-1">756 Bytes (HMAC)</h3>
+            <p class="text-muted small mb-0">
+                Cryptographic shared secret with <span class="badge bg-dark">chmod 400</span> ownership verification.
+            </p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted text-uppercase fw-bold small">Orchestration Modes</span>
+                <span class="badge bg-info text-dark px-2 py-1">Docker & K8s</span>
+            </div>
+            <h3 class="fw-bold mb-1">Hybrid Ready</h3>
+            <p class="text-muted small mb-0">
+                Docker Compose for local testing, Kubernetes StatefulSet & Terraform Atlas for enterprise cloud.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Cluster Topology View -->
+<div class="card card-custom mb-4">
+    <div class="card-header bg-white border-0 pt-3 pb-0">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">
+                <i class="fa-solid fa-network-wired text-success me-2"></i> Live Replica Set Member Topology (rs0)
+            </h5>
+            <button class="btn btn-sm btn-outline-secondary" onclick="refreshStatus()">
+                <i class="fa-solid fa-arrows-rotate me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row g-3" id="membersRow">
+            {% if status.ok == 1 and status.members %}
+                {% for m in status.members %}
+                <div class="col-md-4">
+                    <div class="p-3 border rounded-3 {% if m.state == 'PRIMARY' %}border-success bg-light{% elif m.state == 'SECONDARY' %}border-primary bg-light{% else %}border-warning bg-light{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold">{{ m.name }}</span>
+                            <span class="badge {% if m.state == 'PRIMARY' %}bg-success{% elif m.state == 'SECONDARY' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                                {{ m.state }}
+                            </span>
+                        </div>
+                        <div class="small text-muted mb-1">
+                            <i class="fa-solid fa-heart-pulse text-danger me-1"></i> Health: <strong>{{ m.health }}</strong>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fa-solid fa-shield-halved text-success me-1"></i> Auth: <strong>Keyfile Verified</strong>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12 text-center py-4 text-muted">
+                    <i class="fa-solid fa-triangle-exclamation fa-2x text-warning mb-2"></i>
+                    <p class="mb-0">Cluster status unavailable or initializing. Run Activity 1 to boot containers.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Three Core Activities Nav -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card card-custom h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="p-3 rounded-circle bg-success bg-opacity-10 text-success me-3">
+                        <i class="fa-brands fa-docker fa-2x"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Activity 1: Replica Set</h5>
+                        <small class="text-muted">Docker Compose & KeyFile</small>
+                    </div>
+                </div>
+                <p class="text-muted small flex-grow-1">
+                    Deploy a production 3-node cluster with intra-cluster keyfile mutual trust, root admin bootstrapping, and authenticated replication.
+                </p>
+                <a href="/lab1" class="btn btn-outline-success w-100">
+                    Explore Activity 1 <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="p-3 rounded-circle bg-primary bg-opacity-10 text-primary me-3">
+                        <i class="fa-solid fa-dharmachakra fa-2x"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Activity 2: Kubernetes</h5>
+                        <small class="text-muted">StatefulSets & Headless Service</small>
+                    </div>
+                </div>
+                <p class="text-muted small flex-grow-1">
+                    Inspect generated Kubernetes manifests for stable DNS network identities, per-pod volumeClaimTemplates, and automated rs.initiate Jobs.
+                </p>
+                <a href="/lab2" class="btn btn-outline-primary w-100">
+                    Explore Activity 2 <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning me-3">
+                        <i class="fa-solid fa-cloud fa-2x"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Terraform & Atlas</h5>
+                        <small class="text-muted">Infrastructure-as-Code</small>
+                    </div>
+                </div>
+                <p class="text-muted small flex-grow-1">
+                    Automate cloud provisioning on MongoDB Atlas with Terraform: AWS AP_SOUTH_1 Mumbai region, M0 free-tier, and RBAC user provisioning.
+                </p>
+                <a href="/cloud" class="btn btn-outline-warning w-100">
+                    Explore Terraform <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function refreshStatus() {
+    fetch('/api/status')
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok === 1 && data.members) {
+                let html = '';
+                data.members.forEach(m => {
+                    const badgeClass = m.state === 'PRIMARY' ? 'bg-success' : (m.state === 'SECONDARY' ? 'bg-primary' : 'bg-warning text-dark');
+                    html += `
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded-3 bg-light">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold">${m.name}</span>
+                                <span class="badge ${badgeClass}">${m.state}</span>
+                            </div>
+                            <div class="small text-muted mb-1"><i class="fa-solid fa-heart-pulse text-danger me-1"></i> Health: <strong>${m.health}</strong></div>
+                            <div class="small text-muted"><i class="fa-solid fa-shield-halved text-success me-1"></i> Auth: <strong>Keyfile Verified</strong></div>
+                        </div>
+                    </div>`;
+                });
+                document.getElementById('membersRow').innerHTML = html;
+            }
+        });
+}
+</script>
+{% endblock %}
