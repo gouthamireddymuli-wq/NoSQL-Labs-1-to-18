@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 12.1: Authentication & RBAC Playground</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1f2328;
+        }
+        .navbar-custom {
+            background: linear-gradient(135deg, #00684a 0%, #004d37 100%);
+        }
+        .card-custom {
+            border: none;
+            border-radius: 0.85rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            background: #ffffff;
+            margin-bottom: 1.5rem;
+        }
+        .badge-pass { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 600; }
+        .badge-fail { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; font-weight: 600; }
+        .badge-enforced { background-color: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; font-weight: 600; }
+        .code-box {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+        .role-pill {
+            padding: 0.25rem 0.6rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" href="/">
+            <i class="fa-solid fa-shield-halved me-2"></i> MongoDB Security Lab 12
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navContent">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+                <li class="nav-item me-2">
+                    <a class="nav-link" href="/"><i class="fa-solid fa-house me-1"></i> Overview</a>
+                </li>
+                <li class="nav-item me-2">
+                    <a class="nav-link active" href="/lab1"><i class="fa-solid fa-user-lock me-1"></i> Lab 12.1: RBAC & Redaction</a>
+                </li>
+                <li class="nav-item me-2">
+                    <a class="nav-link" href="/lab2"><i class="fa-solid fa-key me-1"></i> Lab 12.2: TLS & Certificates</a>
+                </li>
+                <li class="nav-item me-2">
+                    <a class="btn btn-outline-light btn-sm rounded-pill px-3" href="https://hub.docker.com/r/gouthudocker/nosql-lab12" target="_blank">
+                        <i class="fa-brands fa-docker me-1"></i> Docker Hub
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-4 py-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="fa-solid fa-user-shield text-success me-2"></i> Lab 12.1: Authentication & RBAC Enforcement</h2>
+            <p class="text-muted mb-0">Role-Based Access Control, Least Privilege Policies, and Field-Level Data Redaction Views</p>
+        </div>
+        <div class="btn-group">
+            <button id="btnSeed" class="btn btn-outline-primary" onclick="seedData()">
+                <i class="fa-solid fa-database me-1"></i> Seed Sample Data
+            </button>
+            <button id="btnRunMatrix" class="btn btn-success" onclick="runRbacMatrix()">
+                <i class="fa-solid fa-play me-1"></i> Run Live RBAC Matrix
+            </button>
+        </div>
+    </div>
+
+    <!-- Section 1: User & Role Definitions -->
+    <div class="card card-custom p-4">
+        <h5 class="fw-bold mb-3"><i class="fa-solid fa-users-gear text-primary me-2"></i> Configured Least-Privilege Users & Roles</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Username</th>
+                        <th>Authentication DB</th>
+                        <th>Assigned Roles & Privileges</th>
+                        <th>Description / Intended Use</th>
+                        <th>Security Scope</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge bg-danger-subtle text-danger fs-6"><i class="fa-solid fa-crown me-1"></i> admin</span></td>
+                        <td><code>admin</code></td>
+                        <td>
+                            <span class="badge bg-secondary">userAdminAnyDatabase</span>
+                            <span class="badge bg-secondary">clusterAdmin</span>
+                            <span class="badge bg-secondary">readWriteAnyDatabase</span>
+                        </td>
+                        <td>Superuser / Operations Administrator</td>
+                        <td><span class="badge bg-danger text-white">Full Cluster</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-info-subtle text-info-emphasis fs-6"><i class="fa-solid fa-magnifying-glass me-1"></i> app_user_read</span></td>
+                        <td><code>admin</code></td>
+                        <td>
+                            <span class="badge bg-light text-dark border">read@nosql_labs</span>
+                            <span class="badge bg-light text-dark border">analyticsReader@admin</span>
+                        </td>
+                        <td>Reporting and analytics service account (Read-only)</td>
+                        <td><span class="badge bg-warning text-dark">Read-Only</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-success-subtle text-success fs-6"><i class="fa-solid fa-pen-to-square me-1"></i> app_user_write</span></td>
+                        <td><code>nosql_labs</code></td>
+                        <td>
+                            <span class="badge bg-light text-dark border">readWrite@nosql_labs</span>
+                        </td>
+                        <td>Transactional application worker (Orders, Items)</td>
+                        <td><span class="badge bg-primary text-white">Scoped DB</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-warning-subtle text-dark fs-6"><i class="fa-solid fa-file-lines me-1"></i> log_writer</span></td>
+                        <td><code>nosql_labs</code></td>
+                        <td>
+                            <span class="badge bg-light text-dark border">limitedWriter@nosql_labs</span>
+                            <small class="text-muted d-block">(insert/update on logs, read others)</small>
+                        </td>
+                        <td>Telemetry / Audit logging service (Least Privilege)</td>
+                        <td><span class="badge bg-secondary text-white">Collection Scoped</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-purple-subtle text-purple fs-6" style="background:#ede9fe; color:#6d28d9;"><i class="fa-solid fa-user-tie me-1"></i> hr_manager</span></td>
+                        <td><code>nosql_labs</code></td>
+                        <td>
+                            <span class="badge bg-light text-dark border">hrRole@nosql_labs</span>
+                            <small class="text-muted d-block">(readWrite on employees)</small>
+                        </td>
+                        <td>Human Resources officer: access to salaries and SSNs</td>
+                        <td><span class="badge bg-danger-subtle text-danger">Confidential PII</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 2: Live RBAC Enforcement Matrix -->
+    <div class="card card-custom p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="fw-bold mb-0"><i class="fa-solid fa-table-list text-success me-2"></i> Real-Time Permission Enforcement Matrix</h5>
+                <small class="text-muted">Live execution verifying that users CANNOT exceed their designated roles (mongod --auth)</small>
+            </div>
+            <span id="matrixSpinner" class="spinner-border text-success spinner-border-sm d-none" role="status"></span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0" id="matrixTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Test ID</th>
+                        <th>User Account</th>
+                        <th>Attempted Operation</th>
+                        <th>Target Resource</th>
+                        <th>Expected Security Policy</th>
+                        <th>Live Execution Outcome</th>
+                        <th>Result Status</th>
+                    </tr>
+                </thead>
+                <tbody id="matrixBody">
+                    <tr>
+                        <td><code>TEST-01</code></td>
+                        <td><strong>app_user_read</strong></td>
+                        <td><span class="badge bg-primary">READ (find)</span></td>
+                        <td><code>nosql_labs.orders</code></td>
+                        <td>Expected: <strong>PASS</strong> (Read granted)</td>
+                        <td><span class="text-success"><i class="fa-solid fa-circle-check"></i> Query executed successfully</span></td>
+                        <td><span class="badge badge-pass">PASS (PERMITTED)</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>TEST-02</code></td>
+                        <td><strong>app_user_read</strong></td>
+                        <td><span class="badge bg-danger">WRITE (insert)</span></td>
+                        <td><code>nosql_labs.orders</code></td>
+                        <td>Expected: <strong>REJECTED</strong> (Unauthorized)</td>
+                        <td><span class="text-danger"><i class="fa-solid fa-shield-virus"></i> MongoServerError: not authorized on nosql_labs to execute command</span></td>
+                        <td><span class="badge badge-enforced">REJECTED (ENFORCED)</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>TEST-03</code></td>
+                        <td><strong>app_user_write</strong></td>
+                        <td><span class="badge bg-success">WRITE (insert)</span></td>
+                        <td><code>nosql_labs.orders</code></td>
+                        <td>Expected: <strong>PASS</strong> (Write granted)</td>
+                        <td><span class="text-success"><i class="fa-solid fa-circle-check"></i> Inserted document successfully</span></td>
+                        <td><span class="badge badge-pass">PASS (PERMITTED)</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>TEST-04</code></td>
+                        <td><strong>app_user_write</strong></td>
+                        <td><span class="badge bg-warning text-dark">CROSS-DB READ</span></td>
+                        <td><code>bookstore.inventory</code></td>
+                        <td>Expected: <strong>REJECTED</strong> (Unauthorized)</td>
+                        <td><span class="text-danger"><i class="fa-solid fa-shield-virus"></i> MongoServerError: not authorized on bookstore to execute command</span></td>
+                        <td><span class="badge badge-enforced">REJECTED (ENFORCED)</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>TEST-05</code></td>
+                        <td><strong>log_writer</strong></td>
+                        <td><span class="badge bg-success">WRITE (insert)</span></td>
+                        <td><code>nosql_labs.logs</code></td>
+                        <td>Expected: <strong>PASS</strong> (Privilege granted)</td>
+                        <td><span class="text-success"><i class="fa-solid fa-circle-check"></i> Log record inserted</span></td>
+                        <td><span class="badge badge-pass">PASS (PERMITTED)</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>TEST-06</code></td>
+                        <td><strong>log_writer</strong></td>
+                        <td><span class="badge bg-danger">WRITE (insert)</span></td>
+                        <td><code>nosql_labs.orders</code></td>
+                        <td>Expected: <strong>REJECTED</strong> (Unauthorized)</td>
+                        <td><span class="text-danger"><i class="fa-solid fa-shield-virus"></i> MongoServerError: not authorized on nosql_labs.orders</span></td>
+                        <td><span class="badge badge-enforced">REJECTED (ENFORCED)</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>TEST-07</code></td>
+                        <td><strong>admin</strong></td>
+                        <td><span class="badge bg-dark">ADMIN CMD</span></td>
+                        <td><code>admin.serverStatus</code></td>
+                        <td>Expected: <strong>PASS</strong> (clusterAdmin)</td>
+                        <td><span class="text-success"><i class="fa-solid fa-circle-check"></i> Returned serverStatus ok: 1.0</span></td>
+                        <td><span class="badge badge-pass">PASS (PERMITTED)</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 3: Activity 12.1 - Field-Level Redaction via Views -->
+    <div class="card card-custom p-4 border-top border-4 border-success">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="fw-bold mb-1 text-success">
+                    <i class="fa-solid fa-mask text-success me-2"></i> Activity 12.1: Field-Level Redaction via MongoDB Views
+                </h5>
+                <small class="text-muted">
+                    Demonstration of <code>db.createView()</code> using <code>$project</code> with <code>$$REMOVE</code> to omit salary and mask SSN for non-HR roles.
+                </small>
+            </div>
+            <div class="btn-group mt-2 mt-md-0" role="group">
+                <input type="radio" class="btn-check" name="roleMode" id="modeNonHR" checked onchange="fetchEmployeeData('non-hr')">
+                <label class="btn btn-outline-secondary" for="modeNonHR">
+                    <i class="fa-solid fa-user me-1"></i> Query as Non-HR (Redacted View)
+                </label>
+
+                <input type="radio" class="btn-check" name="roleMode" id="modeHR" onchange="fetchEmployeeData('hr')">
+                <label class="btn btn-outline-danger" for="modeHR">
+                    <i class="fa-solid fa-user-tie me-1"></i> Query as HR Role (Raw Collection)
+                </label>
+            </div>
+        </div>
+
+        <!-- Role Badge Display -->
+        <div id="roleIndicator" class="alert alert-secondary d-flex align-items-center py-2 mb-3">
+            <i class="fa-solid fa-eye-slash me-2 fa-lg text-secondary"></i>
+            <div>
+                <strong>Active Context:</strong> <span id="lblRole">General Employee / Analyst</span>
+                <span class="mx-2">•</span> Target: <code id="lblTarget">nosql_labs.employees_safe</code>
+                <span class="mx-2">•</span> Salary Field: <span class="badge bg-danger" id="badgeSalary">EXCLUDED ($$REMOVE)</span>
+                <span class="mx-2">•</span> SSN Field: <span class="badge bg-warning text-dark" id="badgeSSN">MASKED (***-**-XXXX)</span>
+            </div>
+        </div>
+
+        <!-- Employee Table -->
+        <div class="table-responsive mb-4">
+            <table class="table table-hover table-striped align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Employee ID</th>
+                        <th>Full Name</th>
+                        <th>Department</th>
+                        <th>Designation</th>
+                        <th>Social Security Number (SSN)</th>
+                        <th>Annual Compensation (Salary)</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody id="empTableBody">
+                    <tr>
+                        <td><code>EMP-101</code></td>
+                        <td>Arjun Sharma</td>
+                        <td>Engineering</td>
+                        <td>Lead Architect</td>
+                        <td><span class="badge bg-light text-dark border">***-**-4321</span></td>
+                        <td><span class="badge bg-secondary">[REDACTED]</span></td>
+                        <td><span class="badge bg-success">4.8 / 5.0</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>EMP-102</code></td>
+                        <td>Sneha Patel</td>
+                        <td>Security Operations</td>
+                        <td>SecOps Engineer</td>
+                        <td><span class="badge bg-light text-dark border">***-**-3322</span></td>
+                        <td><span class="badge bg-secondary">[REDACTED]</span></td>
+                        <td><span class="badge bg-success">4.9 / 5.0</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>EMP-103</code></td>
+                        <td>Rahul Verma</td>
+                        <td>Finance</td>
+                        <td>Financial Analyst</td>
+                        <td><span class="badge bg-light text-dark border">***-**-8899</span></td>
+                        <td><span class="badge bg-secondary">[REDACTED]</span></td>
+                        <td><span class="badge bg-success">4.5 / 5.0</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>EMP-104</code></td>
+                        <td>Ananya Roy</td>
+                        <td>Human Resources</td>
+                        <td>HR Specialist</td>
+                        <td><span class="badge bg-light text-dark border">***-**-7744</span></td>
+                        <td><span class="badge bg-secondary">[REDACTED]</span></td>
+                        <td><span class="badge bg-success">4.7 / 5.0</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pipeline Code Snippet -->
+        <h6 class="fw-bold"><i class="fa-solid fa-code me-2 text-primary"></i> MongoDB View Definition Pipeline:</h6>
+        <div class="code-box">
+db.createView(
+  "employees_safe",      // View Name (accessible to regular users)
+  "employees",           // Underlying Source Collection (restricted to HR role)
+  [
+    {
+      "$project": {
+        "emp_id": 1,
+        "name": 1,
+        "department": 1,
+        "role": 1,
+        "performance_rating": 1,
+        // Mask SSN: keep only the last 4 digits
+        "ssn": { "$concat": ["***-**-", { "$substrCP": ["$ssn", 7, 4] }] },
+        // Redact salary completely from result documents
+        "salary": "$$REMOVE"
+      }
+    }
+  ]
+)
+        </div>
+    </div>
+
+</div>
+
+<script>
+async function seedData() {
+    const btn = document.getElementById("btnSeed");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Seeding...`;
+    try {
+        const resp = await fetch("/api/lab1/seed", { method: "POST" });
+        const data = await resp.json();
+        alert(data.message || "Data Seeded Successfully!");
+        fetchEmployeeData(document.getElementById("modeHR").checked ? "hr" : "non-hr");
+    } catch (err) {
+        alert("Error seeding data: " + err);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-database me-1"></i> Seed Sample Data`;
+    }
+}
+
+async function fetchEmployeeData(mode) {
+    const tbody = document.getElementById("empTableBody");
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Loading ${mode.toUpperCase()} view...</td></tr>`;
+
+    try {
+        const resp = await fetch(`/api/lab1/query-data?mode=${mode}`);
+        const data = await resp.json();
+
+        // Update UI indicator
+        if (mode === "hr") {
+            document.getElementById("roleIndicator").className = "alert alert-danger d-flex align-items-center py-2 mb-3";
+            document.getElementById("lblRole").innerText = "HR Manager / Administrator (Full Clearance)";
+            document.getElementById("lblTarget").innerText = "nosql_labs.employees";
+            document.getElementById("badgeSalary").className = "badge bg-success";
+            document.getElementById("badgeSalary").innerText = "FULL VISIBILITY ($)";
+            document.getElementById("badgeSSN").className = "badge bg-danger";
+            document.getElementById("badgeSSN").innerText = "UNMASKED (RAW PII)";
+        } else {
+            document.getElementById("roleIndicator").className = "alert alert-secondary d-flex align-items-center py-2 mb-3";
+            document.getElementById("lblRole").innerText = "General Employee / Analyst";
+            document.getElementById("lblTarget").innerText = "nosql_labs.employees_safe";
+            document.getElementById("badgeSalary").className = "badge bg-danger";
+            document.getElementById("badgeSalary").innerText = "EXCLUDED ($$REMOVE)";
+            document.getElementById("badgeSSN").className = "badge bg-warning text-dark";
+            document.getElementById("badgeSSN").innerText = "MASKED (***-**-XXXX)";
+        }
+
+        let html = "";
+        data.documents.forEach(doc => {
+            const salaryCell = doc.salary !== undefined 
+                ? `<span class="fw-bold text-success">$${Number(doc.salary).toLocaleString()}</span>`
+                : `<span class="badge bg-secondary">[REDACTED]</span>`;
+
+            const ssnCell = mode === "hr"
+                ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">${doc.ssn}</span>`
+                : `<span class="badge bg-light text-dark border">${doc.ssn}</span>`;
+
+            html += `
+                <tr>
+                    <td><code>${doc.emp_id}</code></td>
+                    <td class="fw-semibold">${doc.name}</td>
+                    <td>${doc.department}</td>
+                    <td>${doc.role}</td>
+                    <td>${ssnCell}</td>
+                    <td>${salaryCell}</td>
+                    <td><span class="badge bg-success">${doc.performance_rating} / 5.0</span></td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-danger text-center py-3">Error fetching data: ${err}</td></tr>`;
+    }
+}
+
+async function runRbacMatrix() {
+    const btn = document.getElementById("btnRunMatrix");
+    const spinner = document.getElementById("matrixSpinner");
+    btn.disabled = true;
+    spinner.classList.remove("d-none");
+
+    try {
+        const resp = await fetch("/api/lab1/run-rbac-matrix", { method: "POST" });
+        const res = await resp.json();
+
+        const tbody = document.getElementById("matrixBody");
+        tbody.innerHTML = "";
+
+        res.results.forEach(r => {
+            const isPass = r.actual === "PASS";
+            const badgeClass = isPass ? "badge-pass" : "badge-enforced";
+            const icon = isPass ? "fa-circle-check text-success" : "fa-shield-virus text-danger";
+            const detailText = r.error_msg ? `<br><small class="text-danger">${r.error_msg}</small>` : "";
+
+            tbody.innerHTML += `
+                <tr>
+                    <td><code>${r.test_id}</code></td>
+                    <td><strong>${r.user}</strong></td>
+                    <td><span class="badge bg-dark">${r.action}</span></td>
+                    <td><code>${r.target}</code></td>
+                    <td>Expected: <strong>${r.expected}</strong></td>
+                    <td><i class="fa-solid ${icon} me-1"></i> ${r.actual} ${detailText}</td>
+                    <td><span class="badge ${badgeClass}">${r.actual === r.expected ? 'PASS (VERIFIED)' : r.actual}</span></td>
+                </tr>
+            `;
+        });
+    } catch (err) {
+        alert("Failed to execute RBAC matrix: " + err);
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add("d-none");
+    }
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
