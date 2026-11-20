@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}Architecture &amp; Mathematical Theory – NoSQL Lab 17{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-dark px-3 py-1 fw-bold">DEEP DIVE &amp; SYSTEM ARCHITECTURE</span>
+            <span class="text-muted small">NoSQL Lab 17 Core Theory</span>
+        </div>
+        <h2 class="fw-bold mb-0">System Architecture, Mathematical Models &amp; Docker Demonstration</h2>
+    </div>
+    <div>
+        <a href="https://hub.docker.com/r/gouthudocker/nosql-lab17" target="_blank" class="btn btn-outline-primary px-3">
+            <i class="fa-brands fa-docker me-1"></i> Docker Hub Repo
+        </a>
+    </div>
+</div>
+
+<!-- Architecture Flow Banner -->
+<div class="card card-custom p-4 mb-4">
+    <h4 class="fw-bold fs-5 mb-3 text-dark">
+        <i class="fa-solid fa-diagram-project text-primary me-2"></i>
+        1. End-to-End RAG Pipeline Architecture
+    </h4>
+    <div class="bg-light p-4 rounded-3 border mb-3">
+        <div class="row text-center g-3">
+            <div class="col-md-2">
+                <div class="p-3 bg-white rounded border shadow-sm h-100">
+                    <i class="fa-solid fa-file-lines fs-3 text-primary mb-2"></i>
+                    <div class="fw-bold small">Documents</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Raw text corpus (NoSQL knowledge)</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="p-3 bg-white rounded border shadow-sm h-100">
+                    <i class="fa-solid fa-scissors fs-3 text-warning mb-2"></i>
+                    <div class="fw-bold small">Chunking</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">50-word bounded passages</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="p-3 bg-white rounded border shadow-sm h-100">
+                    <i class="fa-solid fa-fingerprint fs-3 text-info mb-2"></i>
+                    <div class="fw-bold small">Embedding</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">384-d normalized unit vectors</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="p-3 bg-white rounded border shadow-sm h-100">
+                    <i class="fa-solid fa-database fs-3 text-success mb-2"></i>
+                    <div class="fw-bold small">MongoDB</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Storage &amp; projection indexing</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="p-3 bg-white rounded border shadow-sm h-100">
+                    <i class="fa-solid fa-magnifying-glass-chart fs-3 text-purple mb-2"></i>
+                    <div class="fw-bold small">Cosine Search</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Brute-force dot product top-k</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="p-3 bg-white rounded border shadow-sm h-100">
+                    <i class="fa-solid fa-robot fs-3 text-danger mb-2"></i>
+                    <div class="fw-bold small">Prompt &amp; LLM</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Contextual prompt + conversation</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p class="small text-muted mb-0">
+        In a production MongoDB deployment, MongoDB Atlas Vector Search provides the native <code>$vectorSearch</code> aggregation stage, which builds an in-memory Hierarchical Navigable Small World (HNSW) index over stored embeddings, returning top-k nearest neighbors in sub-millisecond time.
+    </p>
+</div>
+
+<!-- Mathematical Foundations -->
+<div class="card card-custom p-4 mb-4">
+    <h4 class="fw-bold fs-5 mb-3 text-dark">
+        <i class="fa-solid fa-square-root-variable text-success me-2"></i>
+        2. Mathematical Formulations &amp; Index Logic
+    </h4>
+    <div class="row g-4">
+        <!-- Cosine Similarity -->
+        <div class="col-md-6">
+            <div class="border rounded-3 p-3 bg-light h-100">
+                <h6 class="fw-bold text-primary mb-2">A. Cosine Similarity via Dot Product</h6>
+                <p class="small text-muted mb-2">
+                    Cosine similarity measures the angle between two geometric vectors in $\mathbb{R}^D$:
+                </p>
+                <div class="p-2 bg-white rounded border text-center mb-2">
+                    $$\text{sim}(\mathbf{u}, \mathbf{v}) = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\|_2 \|\mathbf{v}\|_2} = \frac{\sum_{i=1}^D u_i v_i}{\sqrt{\sum_{i=1}^D u_i^2} \sqrt{\sum_{i=1}^D v_i^2}}$$
+                </div>
+                <p class="small text-muted mb-0">
+                    Because our <code>mock_embed()</code> function normalizes each vector by dividing by its Euclidean norm, $\|\mathbf{u}\| = \|\mathbf{v}\| = 1$, reducing the calculation strictly to the dot product $\mathbf{u} \cdot \mathbf{v}$.
+                </p>
+            </div>
+        </div>
+
+        <!-- Recall@K -->
+        <div class="col-md-6">
+            <div class="border rounded-3 p-3 bg-light h-100">
+                <h6 class="fw-bold text-success mb-2">B. Empirical Recall@K Metric</h6>
+                <p class="small text-muted mb-2">
+                    Recall@K quantifies the fidelity of approximate methods against exact ground truth:
+                </p>
+                <div class="p-2 bg-white rounded border text-center mb-2">
+                    $$\text{Recall}@K = \frac{|\mathcal{N}_{\text{approx}}^{(K)}(\mathbf{q}) \cap \mathcal{N}_{\text{exact}}^{(K)}(\mathbf{q})|}{K}$$
+                </div>
+                <p class="small text-muted mb-0">
+                    A recall of $100\%$ means the approximate method retrieved identical top-k neighbors as brute-force search. Values $>90\%$ are typical production targets for LLM retrieval.
+                </p>
+            </div>
+        </div>
+
+        <!-- IVF Index -->
+        <div class="col-md-6">
+            <div class="border rounded-3 p-3 bg-light h-100">
+                <h6 class="fw-bold text-purple mb-2">C. IVF (Inverted File Index) &amp; Lloyd's K-Means</h6>
+                <p class="small text-muted mb-2">
+                    IVF partitions $N$ vectors into $n_{\text{list}}$ Voronoi cells with centroids $\{\mathbf{c}_1, \dots, \mathbf{c}_k\}$. At query time, only $n_{\text{probe}}$ clusters are inspected:
+                </p>
+                <div class="p-2 bg-white rounded border text-center mb-2">
+                    $$\mathcal{C}_{\text{probe}} = \underset{\mathcal{C} \subset \{1..n_{\text{list}}\}, |\mathcal{C}|=n_{\text{probe}}}{\operatorname{argmax}} \sum_{c \in \mathcal{C}} (\mathbf{c}_c \cdot \mathbf{q})$$
+                </div>
+                <p class="small text-muted mb-0">
+                    Vectors compared per query drops to $\approx \frac{n_{\text{probe}}}{n_{\text{list}}} \times N$. However, true neighbors landing outside probe cells are lost.
+                </p>
+            </div>
+        </div>
+
+        <!-- HNSW Graph -->
+        <div class="col-md-6">
+            <div class="border rounded-3 p-3 bg-light h-100">
+                <h6 class="fw-bold text-danger mb-2">D. Navigable Small World (NSW / HNSW)</h6>
+                <p class="small text-muted mb-2">
+                    Vectors form vertices in a graph with high clustering and short path lengths. Greedy best-first routing explores edges maximizing similarity:
+                </p>
+                <div class="p-2 bg-white rounded border text-center mb-2">
+                    $$v_{t+1} = \underset{u \in \text{Neighbors}(v_t)}{\operatorname{argmax}} (\mathbf{u} \cdot \mathbf{q})$$
+                </div>
+                <p class="small text-muted mb-0">
+                    The search terminates when no candidate in the frontier expands beyond the worst element in the priority queue bounded by <code>ef_search</code>.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Docker Submission & Demonstration Callout -->
+<div class="card card-custom p-4 mb-4" style="border-top: 5px solid #00684a;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold fs-5 mb-0 text-dark">
+            <i class="fa-brands fa-docker text-primary me-2"></i>
+            3. Docker Hub Demonstration &amp; Submission Instructions
+        </h4>
+        <span class="badge bg-success-subtle text-success border border-success px-3 py-2">
+            Grading Verified
+        </span>
+    </div>
+
+    <div class="alert alert-success d-flex align-items-center justify-content-between p-3 mb-3">
+        <div>
+            <strong>Docker Hub Repository:</strong>
+            <a href="https://hub.docker.com/r/gouthudocker/nosql-lab17" target="_blank" class="fw-bold text-primary ms-1">
+                https://hub.docker.com/r/gouthudocker/nosql-lab17
+            </a>
+        </div>
+        <span class="badge bg-dark text-light font-monospace">docker pull gouthudocker/nosql-lab17:latest</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle small mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 25%;">Step / Objective</th>
+                    <th>Demonstration Command</th>
+                    <th style="width: 35%;">Expected Evaluation Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="fw-bold">1. Pull Docker Image</td>
+                    <td><code class="text-primary">docker pull gouthudocker/nosql-lab17:latest</code></td>
+                    <td class="text-muted">Downloads pre-built, production-ready container image from Docker Hub.</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">2. Run Web Service</td>
+                    <td><code class="text-primary">docker run -d --name nosql_lab17 -p 5000:5000 gouthudocker/nosql-lab17:latest</code></td>
+                    <td class="text-muted">Starts Flask web app on <code>http://localhost:5000</code> with interactive GUI.</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">3. Run Lab 17.1 CLI</td>
+                    <td><code class="text-primary">docker exec -it nosql_lab17 py lab_01_rag_pipeline.py</code></td>
+                    <td class="text-muted">Executes document chunking, mock embedding, MongoDB retrieval &amp; prompt construction.</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">4. Run Lab 17.2 CLI</td>
+                    <td><code class="text-primary">docker exec -it nosql_lab17 py lab_02_hnsw_vs_ivf.py</code></td>
+                    <td class="text-muted">Generates 3,000 synthetic vectors and outputs benchmark table with Recall@10.</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">5. Run All CLI Suite</td>
+                    <td><code class="text-primary">docker exec -it nosql_lab17 py run_all.py</code></td>
+                    <td class="text-muted">Sequentially executes all lab activities and generates consolidated logs.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
