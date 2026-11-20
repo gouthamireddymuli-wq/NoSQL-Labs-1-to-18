@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Architecture &amp; REST API Documentation{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Architecture &amp; API</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold fs-3 mb-0">
+            <i class="fa-solid fa-diagram-project text-info me-2"></i>
+            System Architecture &amp; REST API Specification
+        </h2>
+        <p class="text-muted small mb-0">Deep Dive into Multi-Tenant Isolation Tiers, Security Models &amp; Production API Schemas</p>
+    </div>
+</div>
+
+<!-- Architecture Deep Dive -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="card card-custom p-4 h-100">
+            <div class="p-3 bg-primary-subtle text-primary rounded-circle d-inline-block mb-3 fs-4" style="width: 55px; height: 55px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-table-cells"></i>
+            </div>
+            <h5 class="fw-bold">Shared Collection (Document Key)</h5>
+            <span class="badge bg-primary mb-3">Tier 1: High Density / Low Cost</span>
+            <p class="small text-muted">
+                All tenants share a single collection (<code>saas_app.tasks</code>). Every document is tagged with <code>tenant_id</code>.
+            </p>
+            <ul class="small text-secondary ps-3 mb-3">
+                <li><strong>Indexes:</strong> Compound index <code>{tenant_id: 1, created_at: -1}</code>.</li>
+                <li><strong>Cost:</strong> Minimal RAM, single set of file handles.</li>
+                <li><strong>Risk:</strong> Requires software enforcement. If developer writes <code>{_id: id}</code> instead of <code>{_id: id, tenant_id: tenant}</code>, data is exposed cross-tenant.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card card-custom p-4 h-100">
+            <div class="p-3 bg-info-subtle text-info rounded-circle d-inline-block mb-3 fs-4" style="width: 55px; height: 55px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-folder-tree"></i>
+            </div>
+            <h5 class="fw-bold">Collection per Tenant</h5>
+            <span class="badge bg-info text-dark mb-3">Tier 2: Logical Isolation</span>
+            <p class="small text-muted">
+                Each tenant receives their own dedicated collection in the same database (e.g., <code>db.tasks_acme</code>).
+            </p>
+            <ul class="small text-secondary ps-3 mb-3">
+                <li><strong>Indexes:</strong> Independent per-tenant indexes.</li>
+                <li><strong>Management:</strong> Can drop or index an individual tenant without locking neighbors.</li>
+                <li><strong>Trade-off:</strong> High collection count leads to namespace and metadata overhead at scale (>10,000 collections).</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card card-custom p-4 h-100">
+            <div class="p-3 bg-success-subtle text-success rounded-circle d-inline-block mb-3 fs-4" style="width: 55px; height: 55px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-database"></i>
+            </div>
+            <h5 class="fw-bold">Database per Tenant</h5>
+            <span class="badge bg-success mb-3">Tier 3: Physical Isolation</span>
+            <p class="small text-muted">
+                Enterprise tenants are isolated into dedicated databases (e.g. <code>tenant_acme</code>).
+            </p>
+            <ul class="small text-secondary ps-3 mb-3">
+                <li><strong>Compliance:</strong> GDPR right-to-erasure achieved with instant <code>dropDatabase()</code>.</li>
+                <li><strong>Security:</strong> Granular database-level MongoDB RBAC users per tenant.</li>
+                <li><strong>Migration:</strong> Activity 2 provides the frictionless upgrade path between Tier 1 and Tier 3.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- REST API Endpoints Specification -->
+<div class="card card-custom p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0"><i class="fa-solid fa-network-wired text-success me-2"></i> REST API Endpoint Reference</h5>
+        <span class="badge bg-dark">Base URL: http://localhost:5005/api</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle table-hover small">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 10%;">Method</th>
+                    <th style="width: 25%;">Endpoint</th>
+                    <th style="width: 35%;">Description &amp; Behavior</th>
+                    <th style="width: 30%;">Headers &amp; Query Params</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="badge bg-success">GET</span></td>
+                    <td><code>/api/health</code></td>
+                    <td>MongoDB connection health, server version, list of dedicated tenant databases.</td>
+                    <td>None</td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-success">GET</span></td>
+                    <td><code>/api/tenants</code></td>
+                    <td>Returns all active tenants across shared collections and dedicated databases.</td>
+                    <td>None</td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-success">GET</span></td>
+                    <td><code>/api/tasks</code></td>
+                    <td>Retrieves all tasks scoped strictly to the requesting tenant.</td>
+                    <td><code>X-Tenant-ID: tenant-acme</code> or <code>?tenant_id=...</code></td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-primary">POST</span></td>
+                    <td><code>/api/tasks</code></td>
+                    <td>Creates a new task. Checks rate limiter (10 req/60s). Rejects with 429 if throttled.</td>
+                    <td><code>X-Tenant-ID: tenant-acme</code>, Body: <code>{title, priority, ...}</code></td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-warning text-dark">PUT</span></td>
+                    <td><code>/api/tasks/&lt;task_id&gt;</code></td>
+                    <td>Updates task within tenant boundary. Enforces compound filter <code>{_id, tenant_id}</code>.</td>
+                    <td><code>X-Tenant-ID: tenant-acme</code>, Body: <code>{status, priority}</code></td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-danger">POST</span></td>
+                    <td><code>/api/security/simulate-attack</code></td>
+                    <td>Interactive BOLA security evaluation comparing vulnerable vs secure filters.</td>
+                    <td>Body: <code>{task_id, attacker_tenant, mode}</code></td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-info text-dark">POST</span></td>
+                    <td><code>/api/rate-limit/test</code></td>
+                    <td>Runs sliding-window rate limit burst test (e.g. 12 calls) in MongoDB.</td>
+                    <td>Body: <code>{tenant_id, burst, limit, window}</code></td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-secondary">POST</span></td>
+                    <td><code>/api/migration/dry-run</code></td>
+                    <td>Executes migration dry-run, reporting candidate documents without writing.</td>
+                    <td>Body: <code>{tenant_id}</code></td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-primary">POST</span></td>
+                    <td><code>/api/migration/execute</code></td>
+                    <td>Performs live idempotent migration using upsert on <code>(tenant_id, title)</code>.</td>
+                    <td>Body: <code>{tenant_id}</code></td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-dark">POST</span></td>
+                    <td><code>/api/migration/rollback</code></td>
+                    <td>Drops the tenant's dedicated database. Leaves shared collection untouched.</td>
+                    <td>Body: <code>{tenant_id}</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Curl Example Snippets -->
+<div class="card card-custom p-4">
+    <h5 class="fw-bold mb-3"><i class="fa-solid fa-terminal text-dark me-2"></i> Example CLI Invocations (cURL)</h5>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="small fw-bold text-muted">1. Create Task with Tenant Header &amp; Rate Limiting:</label>
+            <div class="code-block p-2" style="font-size: 0.8rem;">
+curl -X POST http://localhost:5005/api/tasks \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-ID: tenant-acme" \
+  -d '{"title": "Deploy Model", "priority": "high"}'
+            </div>
+        </div>
+        <div class="col-md-6">
+            <label class="small fw-bold text-muted">2. Live Migration Trigger via REST:</label>
+            <div class="code-block p-2" style="font-size: 0.8rem;">
+curl -X POST http://localhost:5005/api/migration/execute \
+  -H "Content-Type: application/json" \
+  -d '{"tenant_id": "tenant-acme"}'
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

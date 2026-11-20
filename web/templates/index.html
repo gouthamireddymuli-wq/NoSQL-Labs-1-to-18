@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block title %}NoSQL Lab 15 – Overview &amp; Multi-Tenancy Architecture{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<div class="hero-banner">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center mb-2">
+                <span class="badge bg-success-subtle text-success border border-success me-2 px-3 py-1">
+                    <span class="pulse-dot"></span> LIVE ENVIRONMENT
+                </span>
+                <span class="text-white-50 small">Distributed NoSQL Database Systems</span>
+            </div>
+            <h1 class="mb-1 fw-bold fs-2 text-white">
+                <i class="fa-solid fa-layer-group text-success me-2"></i>
+                Lab 15: Multi-Tenant API &amp; Tenant Migration Strategies
+            </h1>
+            <p class="mb-0 text-white-50">
+                Shared-Collection Isolation, Cross-Tenant BOLA Prevention, DB-Native Rate Limiting &amp; Zero-Downtime Idempotent Migrations
+            </p>
+        </div>
+        <div class="text-end">
+            <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary text-start">
+                <div class="small text-white-50">Student Register:</div>
+                <div class="fw-bold text-white fs-6">M Gouthami &bull; 24BTRCL130</div>
+                <div class="small text-success mt-1">
+                    <i class="fa-brands fa-docker me-1"></i> gouthudocker/nosql-lab15:latest
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Status Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card card-custom p-4 stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">MongoDB Status</span>
+                <i class="fa-solid fa-server fs-5 text-success"></i>
+            </div>
+            {% if connected %}
+                <div class="metric-val text-success">Online</div>
+                <div class="small text-muted mt-1"><i class="fa-solid fa-tag me-1"></i> MongoDB v{{ version }}</div>
+            {% else %}
+                <div class="metric-val text-danger">Offline</div>
+                <div class="small text-danger mt-1">Check mongod / connection</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-4 stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Shared Collection</span>
+                <i class="fa-solid fa-database fs-5 text-primary"></i>
+            </div>
+            <div class="metric-val text-primary">{{ shared_count }}</div>
+            <div class="small text-muted mt-1"><i class="fa-solid fa-table me-1"></i> saas_app.tasks</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-4 stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Tenants Detected</span>
+                <i class="fa-solid fa-users fs-5 text-info"></i>
+            </div>
+            <div class="metric-val text-info">{{ tenants|length }}</div>
+            <div class="small text-muted mt-1">
+                {% for t in tenants %}
+                    <span class="badge bg-light text-dark border me-1">{{ t }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-4 stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small text-uppercase fw-semibold">Dedicated Databases</span>
+                <i class="fa-solid fa-cubes fs-5 text-warning"></i>
+            </div>
+            <div class="metric-val text-warning">{{ dedicated_count }}</div>
+            <div class="small text-muted mt-1">Physically isolated tiers</div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Lab Modules -->
+<div class="row g-4 mb-4">
+    <!-- Lab 15.1 Card -->
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <span class="badge bg-success-subtle text-success px-3 py-1 fw-bold mb-2">ACTIVITY 1</span>
+                    <h3 class="h5 fw-bold mb-1">Design a Multi-Tenant API</h3>
+                    <p class="text-muted small mb-0">Shared-Collection Isolation, CRUD Operations &amp; Database-Native Rate Limiting</p>
+                </div>
+                <div class="p-3 bg-light rounded-circle text-success fs-4">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+            </div>
+            <p class="text-secondary small">
+                Every tenant lives in <code>saas_app.tasks</code> distinguished solely by <code>tenant_id</code>. Includes an interactive live simulator demonstrating the BOLA vulnerability if <code>tenant_id</code> is omitted, alongside an upsert-and-count rate limiter in MongoDB.
+            </p>
+            <div class="bg-light p-3 rounded-3 mb-3 border">
+                <div class="small fw-bold text-dark mb-1"><i class="fa-solid fa-bug text-danger me-1"></i> Core Security Crux:</div>
+                <div class="small text-muted">
+                    Filter <code>{"_id": id, "tenant_id": tenant}</code> prevents cross-tenant data modification. Omitting <code>tenant_id</code> allows any authenticated tenant who guesses or intercepts an ID to compromise victim tasks.
+                </div>
+            </div>
+            <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                <span class="text-muted small"><i class="fa-solid fa-file-code me-1"></i> lab_01_multitenant_api.py</span>
+                <a href="/lab1" class="btn btn-success btn-sm px-4">
+                    Launch Activity 1 Console <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lab 15.2 Card -->
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <span class="badge bg-primary-subtle text-primary px-3 py-1 fw-bold mb-2">ACTIVITY 2</span>
+                    <h3 class="h5 fw-bold mb-1">Data Migration Between Isolation Strategies</h3>
+                    <p class="text-muted small mb-0">Moving Tenants from Shared Collection to Dedicated Database</p>
+                </div>
+                <div class="p-3 bg-light rounded-circle text-primary fs-4">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                </div>
+            </div>
+            <p class="text-secondary small">
+                Seamlessly migrate an enterprise tenant from shared <code>saas_app.tasks</code> to a dedicated physical database <code>tenant_acme.tasks</code> with dry-run planning, upsert-based idempotency proofs, SHA-256 cryptographic verification, and zero-data-loss rollback.
+            </p>
+            <div class="bg-light p-3 rounded-3 mb-3 border">
+                <div class="small fw-bold text-dark mb-1"><i class="fa-solid fa-repeat text-primary me-1"></i> Idempotency Crux:</div>
+                <div class="small text-muted">
+                    Re-running the migration script converges to the exact same state without duplicate documents because it keys upserts on natural business keys <code>(tenant_id, title)</code>.
+                </div>
+            </div>
+            <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                <span class="text-muted small"><i class="fa-solid fa-file-code me-1"></i> lab_02_tenant_migration.py</span>
+                <a href="/lab2" class="btn btn-primary btn-sm px-4">
+                    Launch Migration Studio <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Architecture Comparison Matrix -->
+<div class="card card-custom p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="h6 fw-bold mb-0 text-uppercase tracking-wide text-dark">
+            <i class="fa-solid fa-table-columns text-success me-2"></i> Multi-Tenant MongoDB Isolation Strategies Matrix
+        </h4>
+        <span class="badge bg-secondary">Architectural Trade-offs</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle mb-0 table-custom">
+            <thead>
+                <tr>
+                    <th style="width: 20%;">Isolation Approach</th>
+                    <th style="width: 15%;">Isolation Level</th>
+                    <th style="width: 32%;">Key Advantages (Pros)</th>
+                    <th style="width: 33%;">Key Constraints (Cons)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <strong class="text-primary">Shared Collection</strong><br>
+                        <code class="small">{"tenant_id": id}</code>
+                    </td>
+                    <td><span class="badge bg-warning text-dark">Medium</span></td>
+                    <td>Lowest operational cost, single set of indexes, frictionless tenant onboarding, minimal connection overhead.</td>
+                    <td>Application-level filtering mandatory in every query; high risk of BOLA/IDOR if filter is omitted. Shared resource contention.</td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong class="text-info">Collection-per-Tenant</strong><br>
+                        <code class="small">db.tenant_{id}_tasks</code>
+                    </td>
+                    <td><span class="badge bg-info text-dark">Strong</span></td>
+                    <td>Simpler RBAC, collection-level drop/backup, logical isolation, separate index spaces per tenant.</td>
+                    <td>Namespaces and file descriptor limits at scale (thousands of collections); cross-tenant reporting becomes complex.</td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong class="text-success">Database-per-Tenant</strong><br>
+                        <code class="small">tenant_{id}.tasks</code>
+                    </td>
+                    <td><span class="badge bg-success">Strongest</span></td>
+                    <td>Physical data isolation, compliance ready (GDPR/HIPAA), dedicated storage quotas, easy drop/restore per tenant.</td>
+                    <td>Higher memory &amp; connection pool overhead; resource pooling across small tenants is inefficient.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pre-Activity Research & Technical Answers -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card card-custom p-4 h-100">
+            <h5 class="fw-bold fs-6 text-dark mb-3">
+                <i class="fa-solid fa-clipboard-question text-danger me-2"></i> Activity 1 Analysis: Cross-Tenant Vulnerability
+            </h5>
+            <div class="alert alert-danger bg-danger-subtle border-danger text-dark small mb-3">
+                <strong>Question:</strong> What would go wrong concretely if <code>update_task</code> filter only checked <code>{"_id": task_id}</code> without also checking <code>tenant_id</code>?
+            </div>
+            <p class="small text-secondary mb-2">
+                <strong>Concrete Vulnerability Scenario:</strong>
+            </p>
+            <ol class="small text-secondary ps-3 mb-3">
+                <li>Suppose Acme Corporation creates critical task <code>t1</code> with ID <code>655a1b...</code> titled <em>"Setup ML Pipeline"</em>.</li>
+                <li>Globex Corporation (a competitor or malicious tenant) observes, guesses, or intercepts task ID <code>t1</code> via API logs or enumeration.</li>
+                <li>Globex sends a <code>PUT /api/tasks/655a1b...</code> request authenticated with Globex's session headers.</li>
+                <li>If the backend executes <code>col.update_one({"_id": task_id}, {"$set": updates})</code>, MongoDB finds document <code>t1</code> and executes the update!</li>
+                <li><strong>Outcome:</strong> Globex successfully closes, alters, or destroys Acme's private business data. This violates tenant isolation (Broken Object Level Authorization / IDOR).</li>
+            </ol>
+            <div class="bg-light p-3 rounded-3 border small">
+                <strong class="text-success"><i class="fa-solid fa-check me-1"></i> Prevention in Lab 15.1:</strong>
+                By enforcing <code>{"_id": task_id, "tenant_id": tenant_id}</code>, MongoDB requires both conditions. Globex's request will find <code>0</code> matches, returning <code>modified_count = 0</code> and blocking the attack.
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-custom p-4 h-100">
+            <h5 class="fw-bold fs-6 text-dark mb-3">
+                <i class="fa-solid fa-clipboard-question text-primary me-2"></i> Activity 2 Analysis: Migration Idempotency
+            </h5>
+            <div class="alert alert-primary bg-primary-subtle border-primary text-dark small mb-3">
+                <strong>Question:</strong> Predict whether the tenant's document count in the new database will double, stay the same, or something else on a repeat migration run?
+            </div>
+            <p class="small text-secondary mb-2">
+                <strong>Technical Prediction &amp; Proof:</strong>
+            </p>
+            <ul class="small text-secondary ps-3 mb-3">
+                <li><strong>Prediction:</strong> The target document count will <strong>stay exactly the same</strong> (2 documents for <code>tenant-acme</code>).</li>
+                <li><strong>Why it doesn't double:</strong> An ordinary <code>insert_one()</code> or <code>insert_many()</code> would generate duplicate documents with new <code>_id</code>s on every run.</li>
+                <li><strong>Upsert on Natural Key:</strong> The migration executes:
+                    <div class="bg-dark text-white p-2 rounded my-2 font-monospace" style="font-size: 0.8rem;">
+                        target_col.update_one(<br>
+                        &nbsp;&nbsp;{"tenant_id": doc["tenant_id"], "title": doc["title"]},<br>
+                        &nbsp;&nbsp;{"$set": doc},<br>
+                        &nbsp;&nbsp;upsert=True<br>
+                        )
+                    </div>
+                </li>
+                <li>On the repeat run, MongoDB matches existing documents by <code>(tenant_id, title)</code> and performs an in-place update rather than an insert.</li>
+            </ul>
+            <div class="bg-light p-3 rounded-3 border small">
+                <strong class="text-primary"><i class="fa-solid fa-shield-check me-1"></i> Verification:</strong>
+                Both source and target document counts remain <code>2</code>, and SHA-256 content hashes match perfectly.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
